@@ -1,11 +1,9 @@
 (ns realworld-clojurescript.app.core
-  (:require [reagent.dom :as rdom]))
-
-(defn app []
-  [:h1 "Create Reagent App"])
+  (:require [reagent.dom :as rdom]
+            [realworld-clojurescript.app.views :as views]))
 
 (defn render []
-  (rdom/render [app] (.getElementById js/document "root")))
+  (rdom/render [views/app] (.getElementById js/document "root")))
 
 (defn ^:export main []
   (render))
