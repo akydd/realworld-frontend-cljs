@@ -43,17 +43,19 @@
   (let [name @(re-frame/subscribe [:reg-form-name])
         email @(re-frame/subscribe [:reg-form-email])
         password @(re-frame/subscribe [:reg-form-password])
-        form-complete? @(re-frame/subscribe [:reg-form-complete?])]
+        form-complete? @(re-frame/subscribe [:reg-form-complete?])
+        error @(re-frame/subscribe [:reg-form-error])]
     [:div.auth-page
      [:div.container.page
       [:div.row
        [:div.col-md-6.offset-md-3.col-xs-12
         [:h1.text-xs-center "Sign up"]
         [:p.text-xs-center
-         [:a {:href "/login"} "Have an account?"]]
+         [:a {:href "/#/login"} "Have an account?"]]
 
-        [:ul.error-messages
-         [:li "That email is already taken"]]
+        (when error
+          [:ul.error-messages
+           [:li "That email is already taken"]])
 
         [:form
          [:fieldset.form-group
@@ -71,7 +73,10 @@
                                                 :value password
                                                 :placeholder "Password"
                                                 :on-change #(re-frame/dispatch [:update-reg-form-password (-> % .-target .-value)])}]]
-         [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-complete?)} "Sign up"]]]]]]))
+         [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-complete?)
+                                                        :on-click (fn [e]
+                                                                    (.preventDefault e)
+                                                                    (re-frame/dispatch [:post-users]))} "Sign up"]]]]]]))
 
 (defn panel-router []
   (let [current-route @(re-frame/subscribe [:current-route])]

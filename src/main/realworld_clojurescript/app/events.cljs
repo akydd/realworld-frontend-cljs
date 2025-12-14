@@ -9,9 +9,13 @@
                        (fn-traced [_ _]
                                   {:loading false
                                    :current-route nil
-                                   :forms {:reg-form {:name ""
-                                                      :email ""
-                                                      :password ""}}}))
+                                   :forms {:reg-form {:fields {:username ""
+                                                               :email ""
+                                                               :password ""}
+                                                      :error nil}
+                                           :login-form {:fields {:email ""
+                                                                 :password ""}
+                                                        :error nil}}}))
 
 (re-frame/reg-event-db :change-route
                        (fn-traced [db [_ new-route]]
@@ -45,12 +49,40 @@
 
 (re-frame/reg-event-db :update-reg-form-name
                        (fn [db [_ name]]
-                         (assoc-in db [:forms :reg-form :name] name)))
+                         (assoc-in db [:forms :reg-form :fields :username] name)))
 
 (re-frame/reg-event-db :update-reg-form-email
                        (fn [db [_ email]]
-                         (assoc-in db [:forms :reg-form :email] email)))
+                         (assoc-in db [:forms :reg-form :fields :email] email)))
 
 (re-frame/reg-event-db :update-reg-form-password
                        (fn [db [_ password]]
-                         (assoc-in db [:forms :reg-form :password] password)))
+                         (assoc-in db [:forms :reg-form :fields :password] password)))
+
+(re-frame/reg-event-fx :post-users
+                       (fn [{:keys [db]}]
+                         (let [user (get-in db [:forms :reg-form :fields])]
+
+                           {:db (assoc db :loading true)
+                            :http-xhrio {:method :post
+                                         :uri "http://localhost:8090/api/users"
+                                         :params {:user user}
+                                         :format (ajax/json-request-format)
+                                         :response-format (ajax/json-response-format {:keywords? true})
+                                         :on-success [:post-users-success]
+                                         :on-failure [:post-users-fail]}})))
+
+(re-frame/reg-event-db :post-users-success
+                       (fn [db [_ result]]
+                         (-> db
+                             (assoc-in [:forms :reg-form :fields :username] "")
+                             (assoc-in [:forms :reg-form :fields :email] "")
+                             (assoc-in [:forms :reg-form :fields :password] "")
+                             (assoc-in [:forms :reg-form :error] nil)
+                             (assoc :loading false))))
+
+(re-frame/reg-event-db :post-users-fail
+                       (fn [db [_ result]]
+                         (-> db
+                             (assoc :loading false)
+                             (assoc-in [:forms :reg-form :error] result))))

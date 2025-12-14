@@ -8,16 +8,20 @@
 
 (re-frame/reg-sub :reg-form-name
                   (fn [db _]
-                    (get-in db [:forms :reg-form :name])))
+                    (get-in db [:forms :reg-form :fields :username])))
 
 (re-frame/reg-sub :reg-form-email
                   (fn [db _]
-                    (get-in db [:forms :reg-form :email])))
+                    (get-in db [:forms :reg-form :fields :email])))
 
 (re-frame/reg-sub :reg-form-password
                   (fn [db _]
-                    (get-in db [:forms :reg-form :password])))
+                    (get-in db [:forms :reg-form :fields :password])))
 
 (re-frame/reg-sub :reg-form-complete?
                   (fn [db _]
-                    (every? not-empty (vals (get-in db [:forms :reg-form])))))
+                    (every? not-empty (vals (get-in db [:forms :reg-form :fields])))))
+
+(re-frame/reg-sub :reg-form-error
+                  (fn [db _]
+                    (get-in db [:forms :reg-form :error])))
