@@ -9,13 +9,22 @@
                        (fn-traced [_ _]
                                   {:loading false
                                    :current-route nil
+                                   :token nil
                                    :forms {:reg-form {:fields {:username ""
                                                                :email ""
                                                                :password ""}
                                                       :error nil}
                                            :login-form {:fields {:email ""
                                                                  :password ""}
-                                                        :error nil}}}))
+                                                        :error nil}
+                                           :settings-form {:fields {:image ""
+                                                                    :username ""
+                                                                    :bio ""
+                                                                    :email ""
+                                                                    :password ""}
+                                                           :error nil}}}))
+
+;; --- navigation ---
 
 (re-frame/reg-event-db :change-route
                        (fn-traced [db [_ new-route]]
@@ -28,61 +37,105 @@
 (re-frame/reg-event-fx :push-state
                        (fn-traced [_ [_ route]]
                                   {:rfe-push-state route}))
+
 (re-frame/reg-event-fx :get-tags
-                       (fn [{:keys [db]}]
-                         {:db (assoc db :loading true)
-                          :http-xhrio {:method :get
-                                       :uri "http://localhost:8090/api/tags"
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :on-success [:get-tags-success]
-                                       :on-failure [:get-tags-fail]}}))
+                       (fn-traced [{:keys [db]}]
+                                  {:db (assoc db :loading true)
+                                   :http-xhrio {:method :get
+                                                :uri "http://localhost:8090/api/tags"
+                                                :response-format (ajax/json-response-format {:keywords? true})
+                                                :on-success [:get-tags-success]
+                                                :on-failure [:get-tags-fail]}}))
 
 (re-frame/reg-event-db :get-tags-success
-                       (fn [db [_ result]]
-                         (assoc db :tags result
-                                :loading false)))
+                       (fn-traced [db [_ result]]
+                                  (assoc db :tags result
+                                         :loading false)))
 
 (re-frame/reg-event-db :get-tags-fail
-                       (fn [db [_ result]]
-                         (assoc db :tags result
-                                :loading false)))
+                       (fn-traced [db [_ result]]
+                                  (assoc db :tags result
+                                         :loading false)))
+
+;; ---- sign up form ---
 
 (re-frame/reg-event-db :update-reg-form-name
-                       (fn [db [_ name]]
-                         (assoc-in db [:forms :reg-form :fields :username] name)))
+                       (fn-traced [db [_ name]]
+                                  (assoc-in db [:forms :reg-form :fields :username] name)))
 
 (re-frame/reg-event-db :update-reg-form-email
-                       (fn [db [_ email]]
-                         (assoc-in db [:forms :reg-form :fields :email] email)))
+                       (fn-traced [db [_ email]]
+                                  (assoc-in db [:forms :reg-form :fields :email] email)))
 
 (re-frame/reg-event-db :update-reg-form-password
-                       (fn [db [_ password]]
-                         (assoc-in db [:forms :reg-form :fields :password] password)))
+                       (fn-traced [db [_ password]]
+                                  (assoc-in db [:forms :reg-form :fields :password] password)))
 
 (re-frame/reg-event-fx :post-users
-                       (fn [{:keys [db]}]
-                         (let [user (get-in db [:forms :reg-form :fields])]
+                       (fn-traced [{:keys [db]}]
+                                  (let [user (get-in db [:forms :reg-form :fields])]
+                                    {:db (-> db
+                                             (assoc :loading true)
+                                             (assoc-in [:forms :reg-form :error] nil))
+                                     :http-xhrio {:method :post
+                                                  :uri "http://localhost:8090/api/users"
+                                                  :params {:user user}
+                                                  :format (ajax/json-request-format)
+                                                  :response-format (ajax/json-response-format {:keywords? true})
+                                                  :on-success [:post-users-success]
+                                                  :on-failure [:post-users-fail]}})))
 
-                           {:db (assoc db :loading true)
+(re-frame/reg-event-fx :post-users-success
+                       (fn [{:keys [db]}]
+                         {:db (-> db
+                                  (assoc-in [:forms :reg-form] {:fields {:username  ""
+                                                                         :email ""
+                                                                         :password ""}
+                                                                :error nil})
+                                  (assoc :loading false))
+                          :fx [[:dispatch [:push-state :login]]]}))
+
+(re-frame/reg-event-db :post-users-fail
+                       (fn-traced [db [_ result]]
+                                  (-> db
+                                      (assoc :loading false)
+                                      (assoc-in [:forms :reg-form :error] result))))
+
+;; --- login in form ---
+
+(re-frame/reg-event-db :update-login-form-email
+                       (fn [db [_ email]]
+                         (assoc-in db [:forms :login-form :fields :email] email)))
+
+(re-frame/reg-event-db :update-login-form-password
+                       (fn [db [_ password]]
+                         (assoc-in db [:forms :login-form :fields :password] password)))
+
+(re-frame/reg-event-fx :post-users-login
+                       (fn [{:keys [db]}]
+                         (let [user (get-in db [:forms :login-form :fields])]
+                           {:db (-> db
+                                    (assoc :loading true)
+                                    (assoc-in [:forms :login-form :error] nil))
                             :http-xhrio {:method :post
-                                         :uri "http://localhost:8090/api/users"
+                                         :uri "http://localhost:8090/api/users/login"
                                          :params {:user user}
                                          :format (ajax/json-request-format)
                                          :response-format (ajax/json-response-format {:keywords? true})
-                                         :on-success [:post-users-success]
-                                         :on-failure [:post-users-fail]}})))
+                                         :on-success [:post-users-login-success]
+                                         :on-failure [:post-users-login-fail]}})))
 
-(re-frame/reg-event-db :post-users-success
-                       (fn [db [_ result]]
-                         (-> db
-                             (assoc-in [:forms :reg-form :fields :username] "")
-                             (assoc-in [:forms :reg-form :fields :email] "")
-                             (assoc-in [:forms :reg-form :fields :password] "")
-                             (assoc-in [:forms :reg-form :error] nil)
-                             (assoc :loading false))))
-
-(re-frame/reg-event-db :post-users-fail
+(re-frame/reg-event-db :post-users-login-fail
                        (fn [db [_ result]]
                          (-> db
                              (assoc :loading false)
-                             (assoc-in [:forms :reg-form :error] result))))
+                             (assoc-in [:forms :login-form :error] result))))
+
+(re-frame/reg-event-fx :post-users-login-success
+                       (fn [{:keys [db]} [_ result]]
+                         {:db (-> db
+                                  (assoc-in [:forms :login-form] {:fields {:email ""
+                                                                           :password ""}
+                                                                  :error nil})
+                                  (assoc :loading false))
+                          :fx [[:dispatch [:push-state :home]]]}))

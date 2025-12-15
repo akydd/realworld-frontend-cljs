@@ -6,6 +6,8 @@
                   (fn [db _]
                     (:current-route db)))
 
+;; --- sign up form ---
+
 (re-frame/reg-sub :reg-form-name
                   (fn [db _]
                     (get-in db [:forms :reg-form :fields :username])))
@@ -25,3 +27,21 @@
 (re-frame/reg-sub :reg-form-error
                   (fn [db _]
                     (get-in db [:forms :reg-form :error])))
+
+;; --- login form ---
+
+(re-frame/reg-sub :login-form-email
+                  (fn [db _]
+                    (get-in db [:forms :login-form :fields :email])))
+
+(re-frame/reg-sub :login-form-password
+                  (fn [db _]
+                    (get-in db [:forms :login-form :fields :password])))
+
+(re-frame/reg-sub :login-form-complete?
+                  (fn [db _]
+                    (every? not-empty (vals (get-in db [:forms :login-form :fields])))))
+
+(re-frame/reg-sub :login-form-error
+                  (fn [db _]
+                    (get-in db [:forms :login-form :error])))

@@ -19,25 +19,37 @@
      [nav-link "/register" :register "Sign up"]]]])
 
 (defn login []
-  [:div.auth-page
-   [:div.container.page
-    [:div.row
-     [:div.col-md-6.offset-md-3.col-xs-12
-      [:h1.text-xs-center "Sign in"]
-      [:p.text-xs-center
-       [:a {:href "/register"} "Need an account"]]
+  (let [email @(re-frame/subscribe [:login-form-email])
+        password @(re-frame/subscribe [:login-form-password])
+        form-complete? @(re-frame/subscribe [:login-form-complete?])
+        error @(re-frame/subscribe [:login-form-error])]
+    [:div.auth-page
+     [:div.container.page
+      [:div.row
+       [:div.col-md-6.offset-md-3.col-xs-12
+        [:h1.text-xs-center "Sign in"]
+        [:p.text-xs-center
+         [:a {:href "/register"} "Need an account"]]
 
-      [:ul.error-messages
-       [:li "That email is already taken"]]
+        (when error
+          [:ul.error-messages
+           [:li (:status-text error)]])
 
-      [:form
-       [:fieldset.form-group
-        [:input.form-control.form-control-lg {:type "text"
-                                              :placeholder "Email"}]]
-       [:fieldset.form-group
-        [:input.form-control.form-control-lg {:type "password"
-                                              :placeholder "Password"}]]
-       [:button.btn.btn-lg.btn-primary.pull-xs-right "Sign in"]]]]]])
+        [:form
+         [:fieldset.form-group
+          [:input.form-control.form-control-lg {:type "text"
+                                                :placeholder "Email"
+                                                :value email
+                                                :on-change #(re-frame/dispatch [:update-login-form-email (-> % .-target .-value)])}]]
+         [:fieldset.form-group
+          [:input.form-control.form-control-lg {:type "password"
+                                                :placeholder "Password"
+                                                :value password
+                                                :on-change #(re-frame/dispatch [:update-login-form-password (-> % .-target .-value)])}]]
+         [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-complete?)
+                                                        :on-click (fn [e]
+                                                                    (.preventDefault e)
+                                                                    (re-frame/dispatch [:post-users-login]))} "Sign in"]]]]]]))
 
 (defn register []
   (let [name @(re-frame/subscribe [:reg-form-name])
@@ -55,7 +67,7 @@
 
         (when error
           [:ul.error-messages
-           [:li "That email is already taken"]])
+           [:li (:status-text error)]])
 
         [:form
          [:fieldset.form-group
@@ -100,6 +112,37 @@
          [:a.nav-link {:href ""} "Your Feed"]]
         [:li.nav-item
          [:a.nav-link.active {:href ""} "Global Feed"]]]]]]]])
+
+(defn settings []
+  [:div.settings-page
+   [:div.container.page
+    [:div.row
+     [:div.col-md-6.offset-md-3.col-xs-12
+      [:h1.text-xs-center "Your Settings"]
+
+      [:ul.error-messages
+       [:li "That name is required"]]
+
+      [:form
+       [:fieldset
+        [:fieldset.form-group
+         [:input.form-control {:type "text"
+                               :placeholder "URL of profile picture"}]]
+        [:fieldset.form-group
+         [:input.form-control.form-control-lg {:type "text"
+                                               :placeholder "Your Name"}]]
+        [:fieldset.form-group
+         [:textarea.form-control.form-control-lg {:placeholder "Short bio about you"
+                                                  :rows 8}]]
+        [:fieldset.form-group
+         [:input.form-control.form-control-lg {:type "text"
+                                               :placeholder "Email"}]]
+        [:fieldset.form-group
+         [:input.form-control.form-control-lg {:type "password"
+                                               :placeholder "New Password"}]]
+        [:button.btn.btn-lg.btn-primary.pull-xs-right "Update Settings"]]]
+      [:hr]
+      [:button.btn.btn-outline-danger "Or click here to logout"]]]]])
 
 (defn app []
   [:div

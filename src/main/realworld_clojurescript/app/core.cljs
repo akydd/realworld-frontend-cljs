@@ -13,7 +13,9 @@
              ["/login" {:view views/login
                         :name :login}]
              ["/register" {:view views/register
-                           :name :register}]])
+                           :name :register}]
+             ["/settings" {:view views/settings
+                           :name :settings}]])
 
 (def router
   (rf/router routes))
