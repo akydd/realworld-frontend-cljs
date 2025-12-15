@@ -30,12 +30,16 @@
 (defn render []
   (rdom/render [views/app {:router router}] (.getElementById js/document "root")))
 
+(defn- init-app []
+  (re-frame/dispatch [:init-db])
+  (re-frame/dispatch [:push-state :home]))
+
 (defn ^:export main []
   (init-routes!)
-  (re-frame/dispatch [:init-db])
+  (init-app)
   (render))
 
 (defn ^:dev/after-load reload! []
   (re-frame/clear-subscription-cache!)
-  (re-frame/dispatch [:init-db])
+  (init-app)
   (render))

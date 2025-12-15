@@ -10,6 +10,7 @@
                                   {:loading false
                                    :current-route nil
                                    :token nil
+                                   :tags nil
                                    :forms {:reg-form {:fields {:username ""
                                                                :email ""
                                                                :password ""}
@@ -24,15 +25,21 @@
                                                                     :password ""}
                                                            :error nil}}}))
 
+;; --- data load events for routes ---
+(defn load-data-for-route [route]
+  (case (get-in route [:data :name])
+    :home (list [:dispatch [:get-tags]])))
+
 ;; --- navigation ---
 
-(re-frame/reg-event-db :change-route
-                       (fn-traced [db [_ new-route]]
-                                  (assoc db :current-route new-route)))
+(re-frame/reg-event-fx :change-route
+                       (fn-traced [{:keys [db]} [_ new-route]]
+                                  {:db (assoc db :current-route new-route)
+                                   :fx (load-data-for-route new-route)}))
 
 (re-frame/reg-fx :rfe-push-state
-                 (fn [route]
-                   (rfe/push-state route)))
+                 (fn-traced [route]
+                            (rfe/push-state route)))
 
 (re-frame/reg-event-fx :push-state
                        (fn-traced [_ [_ route]]
@@ -49,13 +56,12 @@
 
 (re-frame/reg-event-db :get-tags-success
                        (fn-traced [db [_ result]]
-                                  (assoc db :tags result
+                                  (assoc db :tags (:tags result)
                                          :loading false)))
 
 (re-frame/reg-event-db :get-tags-fail
                        (fn-traced [db [_ result]]
-                                  (assoc db :tags result
-                                         :loading false)))
+                                  db))
 
 ;; ---- sign up form ---
 
@@ -101,7 +107,7 @@
                                       (assoc :loading false)
                                       (assoc-in [:forms :reg-form :error] result))))
 
-;; --- login in form ---
+;; --- login form ---
 
 (re-frame/reg-event-db :update-login-form-email
                        (fn [db [_ email]]

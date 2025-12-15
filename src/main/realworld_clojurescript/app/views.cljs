@@ -97,21 +97,35 @@
       [:p "No component found"])))
 
 (defn home []
-  [:div.home-page
-   [:div.banner
-    [:div.container
-     [:h1.logo-font "conduit"]
-     [:p "A place to share your knowledge"]]]
+  (let [tags @(re-frame/subscribe [:tags])]
+    [:div.home-page
+     [:div.banner
+      [:div.container
+       [:h1.logo-font "conduit"]
+       [:p "A place to share your knowledge"]]]
 
-   [:div.container.page
-    [:div.row
-     [:div.col-md-9
-      [:div.feed-toggle
-       [:ul.nav.nav-pills.outline-active
-        [:li.new-item
-         [:a.nav-link {:href ""} "Your Feed"]]
-        [:li.nav-item
-         [:a.nav-link.active {:href ""} "Global Feed"]]]]]]]])
+     [:div.container.page
+      [:div.row
+       [:div.col-md-9
+
+        [:div.feed-toggle
+         [:ul.nav.nav-pills.outline-active
+          [:li.nav-item
+           [:a.nav-link {:href ""} "Your Feed"]]
+          [:li.nav-item
+           [:a.nav-link.active {:href ""} "Global Feed"]]]]
+
+        [:div.article-preview]
+
+        [:ul.pagination]]
+
+       [:div.col-md-3
+        [:div.sidebar
+         [:p "Popular Tags"]
+
+         [:div.tag-list
+          (for [tag tags]
+            ^{:key tag} [:a.tag-pill.tag-default tag])]]]]]]))
 
 (defn settings []
   [:div.settings-page

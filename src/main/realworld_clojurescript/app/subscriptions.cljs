@@ -45,3 +45,9 @@
 (re-frame/reg-sub :login-form-error
                   (fn [db _]
                     (get-in db [:forms :login-form :error])))
+
+;; -- home page --
+
+(re-frame/reg-sub :tags
+                  (fn [db _]
+                    (:tags db)))
