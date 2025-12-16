@@ -96,8 +96,35 @@
       [(-> current-route :data :view)]
       [:p "No component found"])))
 
+(defn article-preview [article]
+  (let [username (get-in article [:author :username])
+        profile-link (str "/profile/" username)]
+    [:div.article-preview
+
+     [:div.article-meta
+      [:a {:href profile-link}
+       [:img {:src (get-in article [:author :image])}]]
+      [::div.info
+       [:a.author {:href profile-link} username]
+       [:span.date (:updatedAt article)]]
+      [:button.btn.btn-outline-primary.btn-sm.pull-xs-right
+       [:i.ion-heart] (:favoritesCount article)]]
+
+     [:a.preview-link {:href (str "/article/" (:slug article))}
+      [:h1 (:title article)]
+      [:p (:description article)]
+      [:span "Read more..."]
+
+      (when (seq (:tag-list article))
+        [:ul.tag-list
+         (for [tag (:tag-list article)]
+           ^{:key tag} [:li.tag-default.tag-pill.tag-outline tag])])]]))
+
 (defn home []
-  (let [tags @(re-frame/subscribe [:tags])]
+  (let [token @(re-frame/subscribe [:token])
+        active-tab @(re-frame/subscribe [:home-page-active-tab])
+        tags @(re-frame/subscribe [:tags])
+        articles @(re-frame/subscribe [:global-feed])]
     [:div.home-page
      [:div.banner
       [:div.container
@@ -110,12 +137,16 @@
 
         [:div.feed-toggle
          [:ul.nav.nav-pills.outline-active
-          [:li.nav-item
-           [:a.nav-link {:href ""} "Your Feed"]]
+
+          (when token
+            [:li.nav-item
+             [:a.nav-link {:href ""} "Your Feed"]])
+
           [:li.nav-item
            [:a.nav-link.active {:href ""} "Global Feed"]]]]
 
-        [:div.article-preview]
+        (for [article articles]
+          ^{:key (:slug article)} [article-preview article])
 
         [:ul.pagination]]
 

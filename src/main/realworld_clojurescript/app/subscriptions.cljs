@@ -50,4 +50,18 @@
 
 (re-frame/reg-sub :tags
                   (fn [db _]
-                    (:tags db)))
+                    (get-in db [:home-page :tags])))
+
+(re-frame/reg-sub :global-feed
+                  (fn [db _]
+                    (get-in db [:home-page :global-feed])))
+
+(re-frame/reg-sub :home-page-active-tab
+                  (fn [db _]
+                    (get-in db [:home-page :tab])))
+
+;; --- authentication ---
+
+(re-frame/reg-sub :token
+                  (fn [db _]
+                    (:token db)))

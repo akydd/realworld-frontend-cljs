@@ -10,7 +10,10 @@
                                   {:loading false
                                    :current-route nil
                                    :token nil
-                                   :tags nil
+                                   :home-page {:tab :global
+                                               :global-feed nil
+                                               :feed nil
+                                               :tags nil}
                                    :forms {:reg-form {:fields {:username ""
                                                                :email ""
                                                                :password ""}
@@ -28,7 +31,8 @@
 ;; --- data load events for routes ---
 (defn load-data-for-route [route]
   (case (get-in route [:data :name])
-    :home (list [:dispatch [:get-tags]])))
+    :home (list [:dispatch [:get-tags]]
+                [:dispatch [:get-articles]])))
 
 ;; --- navigation ---
 
@@ -56,8 +60,9 @@
 
 (re-frame/reg-event-db :get-tags-success
                        (fn-traced [db [_ result]]
-                                  (assoc db :tags (:tags result)
-                                         :loading false)))
+                                  (-> db
+                                      (assoc-in [:home-page :tags] (:tags result))
+                                      (assoc :loading false))))
 
 (re-frame/reg-event-db :get-tags-fail
                        (fn-traced [db [_ result]]
@@ -145,3 +150,29 @@
                                                                   :error nil})
                                   (assoc :loading false))
                           :fx [[:dispatch [:push-state :home]]]}))
+
+;; --- home page ---
+
+(re-frame/reg-event-db :change-home-page-tab
+                       (fn [db [_ tab]]
+                         (assoc-in db [:home-page :tab] tab)))
+
+(re-frame/reg-event-fx :get-articles
+                       (fn [{:keys [db]}]
+                         {:db (assoc db :loading true)
+                          :http-xhrio {:method :get
+                                       :uri "http://localhost:8090/api/articles"
+                                       :response-format (ajax/json-response-format {:keywords? true})
+                                       :on-success [:get-articles-success]
+                                       :on-failure [:get-articles-fail]}}))
+
+(re-frame/reg-event-db :get-articles-success
+                       (fn [db [_ result]]
+                         (-> db
+                             (assoc :loading false)
+                             (assoc-in [:home-page :global-feed] (:articles result)))))
+
+(re-frame/reg-event-db :get-articles-fail
+                       (fn [db [_ result]]
+                         (-> db
+                             (assoc :loading false))))
