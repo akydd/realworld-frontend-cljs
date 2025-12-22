@@ -110,7 +110,7 @@
       [:button.btn.btn-outline-primary.btn-sm.pull-xs-right
        [:i.ion-heart] (:favoritesCount article)]]
 
-     [:a.preview-link {:href (str "/article/" (:slug article))}
+     [:a.preview-link {:href (str "#/article/" (:slug article))}
       [:h1 (:title article)]
       [:p (:description article)]
       [:span "Read more..."]
@@ -188,6 +188,67 @@
         [:button.btn.btn-lg.btn-primary.pull-xs-right "Update Settings"]]]
       [:hr]
       [:button.btn.btn-outline-danger "Or click here to logout"]]]]])
+
+(defn article-meta [article profile]
+  (let [profile-link (str "/#/" (:username profile))]
+    [:div.article-meta
+     [:a {:href profile-link}
+      [:img {:src (:image profile)}]]
+     [:div.info
+      [:a.author {:href profile-link} (:username profile)]
+      [:span.date (:updatedAt article)]]
+
+     [:button.btn.btn-sm.btn-outline-secondary
+      [:i.ion-plus-round] (str " Follow " (:username profile)) [:span.counter "(10)"]]
+
+     [:button.btn.btn-sm.btn-outline-primary
+      [:i.ion-heart] " Favorite Post " [:span.counter (str "(" (:favoritesCount article) ")")]]
+
+     [:button.btn.btn-sm.btn-outline-secondary
+      [:i.ion-edit] " Edit Article"]
+
+     [:button.btn.btn-sm.btn-outline-danger
+      [:i.ion-trash-d] " Delete Article"]]))
+
+(defn article-page []
+  (let [article @(re-frame/subscribe [:current-article])
+        comments @(re-frame/subscribe [:current-comments])
+        profile (:author article)]
+    [:div.article-page
+     [:div.banner
+      [:div.container
+       [:h1 (:title article)]
+       [article-meta article profile]]]
+
+     [:div.container.page
+      [:div.row.article-content
+       [:div.col-md-12 (:body article)
+
+        (for [tag (:tagList article)]
+          ^{:key tag} [:ul.tag-list
+                       [:li.tag-default.tag-pill.tag-outline tag]])]]
+
+      [:hr]
+
+      [:div.article-actions
+       [article-meta article profile]]
+
+      [:div.row
+       [:div.col-xs-12.col-md-8.offset-md-2
+
+        (for [comment comments]
+          (let [author (:author comment)
+                author-link (str "/#/profile/" (:username author))]
+            ^{:key (:id comment)} [:div.card
+                                   [:div.card-block
+                                    [:p.card-text (:body comment)]]
+                                   [:div.card-footer
+                                    [:a.comment-author {:href author-link}
+                                     [:img {:src (:image author)}]]
+                                    [:a.comment-author {:href author-link} (:username author)]
+                                    [:span.date-posted (:updatedAt comment)]
+                                    [:span.mod-options
+                                     [:i.ion-trash-d]]]]))]]]]))
 
 (defn app []
   [:div

@@ -65,3 +65,13 @@
 (re-frame/reg-sub :token
                   (fn [db _]
                     (:token db)))
+
+;; --- article page ---
+
+(re-frame/reg-sub :current-article
+                  (fn [db _]
+                    (:current-article db)))
+
+(re-frame/reg-sub :current-comments
+                  (fn [db _]
+                    (:current-comments db)))

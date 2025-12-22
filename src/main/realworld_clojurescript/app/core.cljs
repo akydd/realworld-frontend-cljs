@@ -15,7 +15,9 @@
              ["/register" {:view views/register
                            :name :register}]
              ["/settings" {:view views/settings
-                           :name :settings}]])
+                           :name :settings}]
+             ["/article/:slug" {:view views/article-page
+                                :name :article-page}]])
 
 (def router
   (rf/router routes))
@@ -36,7 +38,7 @@
 
 (defn ^:export main []
   (init-routes!)
-  (init-app)
+  #_(init-app)
   (render))
 
 (defn ^:dev/after-load reload! []
