@@ -242,4 +242,10 @@
                        [(re-frame/inject-cofx :cookie/get [:token])]
                        (fn-traced [cofx]
                                   (when-let [token (:cookie/get cofx)]
-                                    {:db (assoc (:db cofx) :token token)})))
+                                    {:db (assoc (:db cofx) :token (:token token))})))
+
+(re-frame/reg-event-fx :logout
+                       (fn-traced [{:keys [db]}]
+                                  {:db (dissoc db :token)
+                                   :cookie/remove {:name "token"
+                                                   :on-success [:push-state :home]}}))

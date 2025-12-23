@@ -10,13 +10,17 @@
            :on-click #(re-frame/dispatch [:push-state route])} label]]))
 
 (defn header []
-  [:nav.navbar.navbar-light
-   [:div.containers
-    [:a.navbar-brand "Conduit"]
-    [:ul.nav.navbar-nav.pull-xs-right
-     [nav-link "/" :home "Home"]
-     [nav-link "/login" :login "Sign in"]
-     [nav-link "/register" :register "Sign up"]]]])
+  (let [token @(re-frame/subscribe [:token])]
+    [:nav.navbar.navbar-light
+     [:div.containers
+      [:a.navbar-brand "Conduit"]
+      [:ul.nav.navbar-nav.pull-xs-right
+       [nav-link "/" :home "Home"]
+       (when token [:li.nav-item
+                    [:a.nav-link.active {:href "#"
+                                         :on-click #(re-frame/dispatch [:logout])} "Logout"]])
+       (when-not token [nav-link "/login" :login "Sign in"])
+       (when-not token [nav-link "/register" :register "Sign up"])]]]))
 
 (defn login []
   (let [email @(re-frame/subscribe [:login-form-email])
