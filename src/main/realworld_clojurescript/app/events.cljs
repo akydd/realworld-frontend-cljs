@@ -42,7 +42,8 @@
                                  [:dispatch [:get-token]])
       (= route-name :article-page) (let [slug (get-in route [:path-params :slug])]
                                      (list [:dispatch [:get-article slug]]
-                                           [:dispatch [:get-comments slug]])))))
+                                           [:dispatch [:get-comments slug]]))
+      (= route-name :login) (list [:dispatch [:clear-login-form]]))))
 
 ;; --- navigation ---
 
@@ -132,6 +133,12 @@
                        (fn [db [_ password]]
                          (assoc-in db [:forms :login-form :fields :password] password)))
 
+(re-frame/reg-event-db :clear-login-form
+                       (fn-traced [db _]
+                                  (assoc-in db [:forms :login-form] {:fields {:email ""
+                                                                              :password ""}
+                                                                     :error nil})))
+
 (re-frame/reg-event-fx :post-users-login
                        (fn [{:keys [db]}]
                          (let [user (get-in db [:forms :login-form :fields])]
@@ -154,17 +161,14 @@
 
 (re-frame/reg-event-fx :post-users-login-success
                        (fn-traced [{:keys [db]} [_ result]]
-                                  {:db (-> db
-                                           (assoc-in [:forms :login-form] {:fields {:email ""
-                                                                                    :password ""}
-                                                                           :error nil})
-                                           (assoc :loading false
-                                                  :token (get-in result [:user :token])))
+                                  {:db (assoc db :loading false
+                                              :token (get-in result [:user :token]))
                                    :cookie/set {:name "token"
                                                 :value (get-in result [:user :token])
                                                 :secure true
                                                 :max-age  3600}
-                                   :fx [[:dispatch [:push-state :home]]]}))
+                                   :fx [[:dispatch [:clear-login-form]]
+                                        [:dispatch [:push-state :home]]]}))
 
 ;; --- home page ---
 

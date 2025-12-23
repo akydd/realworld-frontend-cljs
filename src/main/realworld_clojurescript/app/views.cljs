@@ -37,7 +37,7 @@
 
         (when error
           [:ul.error-messages
-           [:li (:status-text error)]])
+           [:li (:status-text "Invalid username or password")]])
 
         [:form
          [:fieldset.form-group
