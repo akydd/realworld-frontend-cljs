@@ -3,11 +3,13 @@
    [re-frame.core :as re-frame]))
 
 (defn nav-link
-  ([link route label]
-   (let [current-route @(re-frame/subscribe [:current-route])]
-     [:li.nav-item
-      [:a  {:class (str "nav-link " (when (= route (-> current-route :data :name)) "active"))
-            :href (str "/#" link)} label]])))
+  [{:keys [link route label] :as opts} & children]
+  (let [current-route @(re-frame/subscribe [:current-route])]
+    [:li.nav-item
+     [:a  {:class (str "nav-link " (when (= route (-> current-route :data :name)) "active"))
+           :href (str "/#" link)}
+      children
+      label]]))
 
 (defn header []
   (let [token @(re-frame/subscribe [:token])
@@ -16,13 +18,24 @@
      [:div.containers
       [:a.navbar-brand "Conduit"]
       [:ul.nav.navbar-nav.pull-xs-right
-       [nav-link "/" :home "Home"]
-       (when token [nav-link "/editor" :editor "New Article"])
-       (when token [nav-link "/settings" :settings "Settings"])
-       (when token [nav-link (str "/profile/" (:username current-user))
-                    :settings (:username current-user)])
-       (when-not token [nav-link "/login" :login "Sign in"])
-       (when-not token [nav-link "/register" :register "Sign up"])
+       [nav-link {:link "/" :route :home :label "Home"}]
+       (when token [nav-link {:link "/editor"
+                              :route :editor
+                              :label "\u00A0New Article"}
+                    ^{:key "1"} [:i.ion-compose]])
+       (when token [nav-link {:link "/settings"
+                              :route :settings
+                              :label "\u00A0Settings"}
+                    ^{:key "1"} [:i.ion-gear-a]])
+       (when token [nav-link {:link (str "/profile/" (:username current-user))
+                              :route :settings
+                              :label (:username current-user)}])
+       (when-not token [nav-link {:link "/login"
+                                  :route :login
+                                  :label "Sign in"}])
+       (when-not token [nav-link {:link  "/register"
+                                  :route :register
+                                  :label "Sign up"}])
        (when token [:li.nav-item
                     [:a.nav-link.active {:href "#"
                                          :on-click #(re-frame/dispatch [:logout])} "Logout"]])]]]))
