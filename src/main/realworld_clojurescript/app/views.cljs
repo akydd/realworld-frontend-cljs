@@ -120,7 +120,7 @@
 
 (defn article-preview [article]
   (let [username (get-in article [:author :username])
-        profile-link (str "/profile/" username)]
+        profile-link (str "#/profile/" username)]
     [:div.article-preview
 
      [:div.article-meta
@@ -271,6 +271,31 @@
                                     [:span.date-posted (:updatedAt comment)]
                                     [:span.mod-options
                                      [:i.ion-trash-d]]]]))]]]]))
+
+(defn profile []
+  (let [profile @(re-frame/subscribe [:profile])]
+    [:div.profile-page
+     [:div.user-info
+      [:div.container
+       [:div.row
+        [:div.col-xs-12.col-md-10.offset-md-1
+         [:img.user-img {:src (:image profile)}]
+         [:h4 (:username profile)]
+         [:p (:bio profile)]
+         [:button.btn.btn-sm.btn-outline-secondary.action-btn
+          [:i.ion-plus-round] (str "\u00A0Follow " (:username profile))]
+         [:button.btn.btn-sm.btn-outline-secondary.action-btn
+          [:i.ion-gear-a "\u00A0Edit Profile Settings"]]]]]]
+
+     [:div.container
+      [:div.row
+       [:div.col-xs-12.col-md-10.offset-md-1
+        [:div.articles-toggle
+         [:ul.nav.nav-pills.outline-active
+          [:li.nav-item
+           [:a.nav-link.active {:href ""} "My Articles"]]
+          [:li.nav-item
+           [:a.nav-link {:href ""} "Favorited Articles"]]]]]]]]))
 
 (defn app []
   [:div

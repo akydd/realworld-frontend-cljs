@@ -11,6 +11,7 @@
                                   {:loading false
                                    :current-route nil
                                    :current-user nil
+                                   :profile nil
                                    :token nil
                                    :home-page {:tab nil
                                                :global-feed nil
@@ -45,7 +46,9 @@
                                      (list [:dispatch [:get-article slug]]
                                            [:dispatch [:get-comments slug]]))
       (= route-name :login) (list [:dispatch [:clear-login-form]])
-      (= route-name :register) (list [:dispatch [:clear-reg-form]]))))
+      (= route-name :register) (list [:dispatch [:clear-reg-form]])
+      (= route-name :profile) (let [username (get-in route [:path-params :username])]
+                                (list [:dispatch [:get-profile username]])))))
 
 ;; --- navigation ---
 
@@ -242,6 +245,27 @@
                              (assoc :current-comments (:comments result)))))
 
 (re-frame/reg-event-db :get-comments-fail
+                       (fn [db [_ result]]
+                         (assoc db :loading false)))
+
+;; --- profile ---
+
+(re-frame/reg-event-fx :get-profile
+                       (fn [{:keys [db]} [_ username]]
+                         {:db (assoc db :loading true)
+                          :http-xhrio {:method :get
+                                       :uri (str base-url "/profiles/" username)
+                                       :response-format (ajax/json-response-format {:keywords? true})
+                                       :on-success [:get-profile-success]
+                                       :on-failure [:get-profile-fail]}}))
+
+(re-frame/reg-event-db :get-profile-success
+                       (fn [db [_ result]]
+                         (-> db
+                             (assoc :loading true)
+                             (assoc :profile (:profile result)))))
+
+(re-frame/reg-event-db :get-profile-fail
                        (fn [db [_ result]]
                          (assoc db :loading false)))
 

@@ -17,7 +17,9 @@
              ["/settings" {:view views/settings
                            :name :settings}]
              ["/article/:slug" {:view views/article-page
-                                :name :article-page}]])
+                                :name :article-page}]
+             ["/profile/:username" {:view views/profile
+                                    :name :profile}]])
 
 (def router
   (rf/router routes))

@@ -79,3 +79,9 @@
 (re-frame/reg-sub :current-comments
                   (fn [db _]
                     (:current-comments db)))
+
+;; --- profile page ---
+
+(re-frame/reg-sub :profile
+                  (fn [db _]
+                    (:profile db)))
