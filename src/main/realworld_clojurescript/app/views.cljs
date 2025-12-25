@@ -2,25 +2,30 @@
   (:require
    [re-frame.core :as re-frame]))
 
-(defn nav-link [link route label]
-  (let [current-route @(re-frame/subscribe [:current-route])]
-    [:li.nav-item
-     [:a  {:class (str "nav-link " (when (= route (-> current-route :data :name)) "active"))
-           :href (str "/#" link)
-           :on-click #(re-frame/dispatch [:push-state route])} label]]))
+(defn nav-link
+  ([link route label]
+   (let [current-route @(re-frame/subscribe [:current-route])]
+     [:li.nav-item
+      [:a  {:class (str "nav-link " (when (= route (-> current-route :data :name)) "active"))
+            :href (str "/#" link)} label]])))
 
 (defn header []
-  (let [token @(re-frame/subscribe [:token])]
+  (let [token @(re-frame/subscribe [:token])
+        current-user @(re-frame/subscribe [:current-user])]
     [:nav.navbar.navbar-light
      [:div.containers
       [:a.navbar-brand "Conduit"]
       [:ul.nav.navbar-nav.pull-xs-right
        [nav-link "/" :home "Home"]
+       (when token [nav-link "/editor" :editor "New Article"])
+       (when token [nav-link "/settings" :settings "Settings"])
+       (when token [nav-link (str "/profile/" (:username current-user))
+                    :settings (:username current-user)])
+       (when-not token [nav-link "/login" :login "Sign in"])
+       (when-not token [nav-link "/register" :register "Sign up"])
        (when token [:li.nav-item
                     [:a.nav-link.active {:href "#"
-                                         :on-click #(re-frame/dispatch [:logout])} "Logout"]])
-       (when-not token [nav-link "/login" :login "Sign in"])
-       (when-not token [nav-link "/register" :register "Sign up"])]]]))
+                                         :on-click #(re-frame/dispatch [:logout])} "Logout"]])]]]))
 
 (defn login []
   (let [email @(re-frame/subscribe [:login-form-email])

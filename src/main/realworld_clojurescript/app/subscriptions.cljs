@@ -66,6 +66,10 @@
                   (fn [db _]
                     (:token db)))
 
+(re-frame/reg-sub :current-user
+                  (fn [db _]
+                    (:current-user db)))
+
 ;; --- article page ---
 
 (re-frame/reg-sub :current-article

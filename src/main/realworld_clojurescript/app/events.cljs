@@ -10,6 +10,7 @@
                        (fn-traced [_ _]
                                   {:loading false
                                    :current-route nil
+                                   :current-user nil
                                    :token nil
                                    :home-page {:tab nil
                                                :global-feed nil
@@ -43,7 +44,8 @@
       (= route-name :article-page) (let [slug (get-in route [:path-params :slug])]
                                      (list [:dispatch [:get-article slug]]
                                            [:dispatch [:get-comments slug]]))
-      (= route-name :login) (list [:dispatch [:clear-login-form]]))))
+      (= route-name :login) (list [:dispatch [:clear-login-form]])
+      (= route-name :register) (list [:dispatch [:clear-reg-form]]))))
 
 ;; --- navigation ---
 
@@ -93,6 +95,12 @@
                        (fn-traced [db [_ password]]
                                   (assoc-in db [:forms :reg-form :fields :password] password)))
 
+(re-frame/reg-event-db :clear-reg-form
+                       (fn [db]
+                         (assoc-in db [:forms :reg-form] {:fields {:username ""
+                                                                   :email ""
+                                                                   :password ""}
+                                                          :error nil})))
 (re-frame/reg-event-fx :post-users
                        (fn-traced [{:keys [db]}]
                                   (let [user (get-in db [:forms :reg-form :fields])]
@@ -109,13 +117,9 @@
 
 (re-frame/reg-event-fx :post-users-success
                        (fn-traced [{:keys [db]}]
-                                  {:db (-> db
-                                           (assoc-in [:forms :reg-form] {:fields {:username  ""
-                                                                                  :email ""
-                                                                                  :password ""}
-                                                                         :error nil})
-                                           (assoc :loading false))
-                                   :fx [[:dispatch [:push-state :login]]]}))
+                                  {:db (assoc db :loading false)
+                                   :fx [[:dispatch [:clear-reg-form]]
+                                        [:dispatch [:push-state :login]]]}))
 
 (re-frame/reg-event-db :post-users-fail
                        (fn-traced [db [_ result]]
@@ -162,7 +166,8 @@
 (re-frame/reg-event-fx :post-users-login-success
                        (fn-traced [{:keys [db]} [_ result]]
                                   {:db (assoc db :loading false
-                                              :token (get-in result [:user :token]))
+                                              :token (get-in result [:user :token])
+                                              :current-user (dissoc (:user result) :token))
                                    :cookie/set {:name "token"
                                                 :value (get-in result [:user :token])
                                                 :secure true
@@ -250,6 +255,8 @@
 
 (re-frame/reg-event-fx :logout
                        (fn-traced [{:keys [db]}]
-                                  {:db (dissoc db :token)
+                                  {:db (-> db
+                                           (dissoc :current-user)
+                                           (dissoc :token))
                                    :cookie/remove {:name "token"
                                                    :on-success [:push-state :home]}}))
