@@ -15,7 +15,7 @@
   (let [token @(re-frame/subscribe [:token])
         current-user @(re-frame/subscribe [:current-user])]
     [:nav.navbar.navbar-light
-     [:div.containers
+     [:div.container
       [:a.navbar-brand "Conduit"]
       [:ul.nav.navbar-nav.pull-xs-right
        [nav-link {:link "/" :route :home :label "Home"}]
@@ -130,7 +130,7 @@
        [:a.author {:href profile-link} username]
        [:span.date (:updatedAt article)]]
       [:button.btn.btn-outline-primary.btn-sm.pull-xs-right
-       [:i.ion-heart] (:favoritesCount article)]]
+       [:i.ion-heart] (str "\u00A0" (:favoritesCount article))]]
 
      [:a.preview-link {:href (str "#/article/" (:slug article))}
       [:h1 (:title article)]
@@ -221,16 +221,20 @@
       [:span.date (:updatedAt article)]]
 
      [:button.btn.btn-sm.btn-outline-secondary
-      [:i.ion-plus-round] (str " Follow " (:username profile)) [:span.counter "(10)"]]
-
+      [:i.ion-plus-round]
+      (str "\u00A0" " Follow " (:username profile) "\u00A0")
+      [:span.counter "(10)"]]
+     "\u00A0\u00A0"
      [:button.btn.btn-sm.btn-outline-primary
-      [:i.ion-heart] " Favorite Post " [:span.counter (str "(" (:favoritesCount article) ")")]]
+      [:i.ion-heart]
+      (str "\u00A0" " Favorite Post" "\u00A0")
+      [:span.counter (str "(" (:favoritesCount article) ")")]]
 
      [:button.btn.btn-sm.btn-outline-secondary
-      [:i.ion-edit] " Edit Article"]
+      [:i.ion-edit] "\u00A0Edit Article"]
 
      [:button.btn.btn-sm.btn-outline-danger
-      [:i.ion-trash-d] " Delete Article"]]))
+      [:i.ion-trash-a] "\u00A0Delete Article"]]))
 
 (defn article-page []
   (let [article @(re-frame/subscribe [:current-article])
