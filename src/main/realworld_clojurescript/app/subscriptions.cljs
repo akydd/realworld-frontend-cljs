@@ -50,11 +50,7 @@
 
 (re-frame/reg-sub :tags
                   (fn [db _]
-                    (get-in db [:home-page :tags])))
-
-(re-frame/reg-sub :global-feed
-                  (fn [db _]
-                    (get-in db [:home-page :global-feed])))
+                    (:tags db)))
 
 (re-frame/reg-sub :home-page-active-tab
                   (fn [db _]
@@ -70,18 +66,26 @@
                   (fn [db _]
                     (:current-user db)))
 
-;; --- article page ---
+;; --- articles ---
 
 (re-frame/reg-sub :current-article
                   (fn [db _]
                     (:current-article db)))
 
-(re-frame/reg-sub :current-comments
+(re-frame/reg-sub :articles
                   (fn [db _]
-                    (:current-comments db)))
+                    (:articles db)))
+
+(re-frame/reg-sub :comments
+                  (fn [db _]
+                    (:comments db)))
 
 ;; --- profile page ---
 
 (re-frame/reg-sub :profile
                   (fn [db _]
                     (:profile db)))
+
+(re-frame/reg-sub :profile-page-tab
+                  (fn [db _]
+                    (get-in db [:profile-page :tab])))

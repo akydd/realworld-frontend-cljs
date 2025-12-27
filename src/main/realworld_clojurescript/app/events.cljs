@@ -13,10 +13,11 @@
                                    :current-user nil
                                    :profile nil
                                    :token nil
-                                   :home-page {:tab nil
-                                               :global-feed nil
-                                               :feed nil
-                                               :tags nil}
+                                   :comments nil
+                                   :articles nil
+                                   :tags nil
+                                   :home-page {:tab nil}
+                                   :profile-page {:tab :my-articles}
                                    :current-article nil
                                    :forms {:reg-form {:fields {:username ""
                                                                :email ""
@@ -48,7 +49,11 @@
       (= route-name :login) (list [:dispatch [:clear-login-form]])
       (= route-name :register) (list [:dispatch [:clear-reg-form]])
       (= route-name :profile) (let [username (get-in route [:path-params :username])]
-                                (list [:dispatch [:get-profile username]])))))
+                                (list [:dispatch [:get-profile username]]
+                                      [:dispatch [:change-profile-page-tab :my-articles]]))
+      (= route-name :profile-favorites) (let [username (get-in route [:path-params :username])]
+                                          (list [:dispatch [:get-profile username]]
+                                                [:dispatch [:change-profile-page-tab :favorited-articles]])))))
 
 ;; --- navigation ---
 
@@ -77,7 +82,7 @@
 (re-frame/reg-event-db :get-tags-success
                        (fn-traced [db [_ result]]
                                   (-> db
-                                      (assoc-in [:home-page :tags] (:tags result))
+                                      (assoc :tags (:tags result))
                                       (assoc :loading false))))
 
 (re-frame/reg-event-db :get-tags-fail
@@ -200,7 +205,7 @@
                        (fn [db [_ result]]
                          (-> db
                              (assoc :loading false)
-                             (assoc-in [:home-page :global-feed] (:articles result)))))
+                             (assoc :articles (:articles result)))))
 
 (re-frame/reg-event-db :get-articles-fail
                        (fn [db [_ result]]
@@ -242,7 +247,7 @@
                        (fn [db [_ result]]
                          (-> db
                              (assoc :loading false)
-                             (assoc :current-comments (:comments result)))))
+                             (assoc :comments (:comments result)))))
 
 (re-frame/reg-event-db :get-comments-fail
                        (fn [db [_ result]]
@@ -284,3 +289,31 @@
                                            (dissoc :token))
                                    :cookie/remove {:name "token"
                                                    :on-success [:push-state :home]}}))
+
+;; --- profile page ---
+
+(re-frame/reg-event-fx :change-profile-page-tab
+                       (fn-traced [{:keys [db]} [_ tab]]
+                                  {:db (assoc-in db [:profile-page :tab] tab)
+                                   :fx (list
+                                        (case tab
+                                          :my-articles [:dispatch [:get-articles-for-user "akydd"]]
+                                          :favorited-articles [:dispatch [:get-user-favorited-articles "akydd"]]))}))
+
+(re-frame/reg-event-fx :get-articles-for-user
+                       (fn-traced [{:keys [db]} [_ username]]
+                                  {:db (assoc db :loading true)
+                                   :http-xhrio {:method :get
+                                                :uri (str base-url "/articles?author=" username)
+                                                :response-format (ajax/json-response-format {:keywords? true})
+                                                :on-success [:get-articles-success]
+                                                :on-failure [:get-article-fail]}}))
+
+(re-frame/reg-event-fx :get-user-favorited-articles
+                       (fn-traced [{:keys [db]} [_ username]]
+                                  {:db (assoc db :loading true)
+                                   :http-xhrio {:method :get
+                                                :uri (str base-url "/articles?favorited=" username)
+                                                :response-format (ajax/json-response-format {:keywords? true})
+                                                :on-success [:get-articles-success]
+                                                :on-failure [:get-article-fail]}}))

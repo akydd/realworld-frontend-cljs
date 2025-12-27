@@ -19,7 +19,9 @@
              ["/article/:slug" {:view views/article-page
                                 :name :article-page}]
              ["/profile/:username" {:view views/profile
-                                    :name :profile}]])
+                                    :name :profile}]
+             ["/profile/:username/favorites" {:view views/profile
+                                              :name :profile-favorites}]])
 
 (def router
   (rf/router routes))

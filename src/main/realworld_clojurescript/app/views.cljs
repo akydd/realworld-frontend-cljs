@@ -146,7 +146,7 @@
   (let [token @(re-frame/subscribe [:token])
         active-tab @(re-frame/subscribe [:home-page-active-tab])
         tags @(re-frame/subscribe [:tags])
-        articles @(re-frame/subscribe [:global-feed])]
+        articles @(re-frame/subscribe [:articles])]
     [:div.home-page
      [:div.banner
       [:div.container
@@ -212,7 +212,7 @@
       [:button.btn.btn-outline-danger "Or click here to logout"]]]]])
 
 (defn article-meta [article profile]
-  (let [profile-link (str "/#/" (:username profile))]
+  (let [profile-link (str "/#/profile/" (:username profile))]
     [:div.article-meta
      [:a {:href profile-link}
       [:img {:src (:image profile)}]]
@@ -238,7 +238,7 @@
 
 (defn article-page []
   (let [article @(re-frame/subscribe [:current-article])
-        comments @(re-frame/subscribe [:current-comments])
+        comments @(re-frame/subscribe [:comments])
         profile (:author article)]
     [:div.article-page
      [:div.banner
@@ -277,7 +277,10 @@
                                      [:i.ion-trash-d]]]]))]]]]))
 
 (defn profile []
-  (let [profile @(re-frame/subscribe [:profile])]
+  (let [profile @(re-frame/subscribe [:profile])
+        active-tab @(re-frame/subscribe [:profile-page-tab])
+        articles @(re-frame/subscribe [:articles])
+        profile-link (str "#/profile/" (:username profile))]
     [:div.profile-page
      [:div.user-info
       [:div.container
@@ -287,9 +290,9 @@
          [:h4 (:username profile)]
          [:p (:bio profile)]
          [:button.btn.btn-sm.btn-outline-secondary.action-btn
-          [:i.ion-plus-round] (str "\u00A0Follow " (:username profile))]
+          [:i.ion-plus-round] (str "\u00A0 Follow " (:username profile))]
          [:button.btn.btn-sm.btn-outline-secondary.action-btn
-          [:i.ion-gear-a "\u00A0Edit Profile Settings"]]]]]]
+          [:i.ion-gear-a "\u00A0 Edit Profile Settings"]]]]]]
 
      [:div.container
       [:div.row
@@ -297,9 +300,14 @@
         [:div.articles-toggle
          [:ul.nav.nav-pills.outline-active
           [:li.nav-item
-           [:a.nav-link.active {:href ""} "My Articles"]]
+           [:a {:class (str "nav-link " (when (= active-tab :my-articles) "active"))
+                :href profile-link} "My Articles"]]
           [:li.nav-item
-           [:a.nav-link {:href ""} "Favorited Articles"]]]]]]]]))
+           [:a {:class (str "nav-link " (when (= active-tab :favorited-articles) "active"))
+                :href (str profile-link "/favorites")} "Favorited Articles"]]]]
+
+        (for [article articles]
+          ^{:key (:slug article)} [article-preview article])]]]]))
 
 (defn app []
   [:div
