@@ -50,17 +50,21 @@
       (= route-name :register) (list [:dispatch [:clear-reg-form]])
       (= route-name :profile) (let [username (get-in route [:path-params :username])]
                                 (list [:dispatch [:get-profile username]]
-                                      [:dispatch [:change-profile-page-tab :my-articles]]))
+                                      [:dispatch [:change-profile-page-tab :my-articles username]]))
       (= route-name :profile-favorites) (let [username (get-in route [:path-params :username])]
                                           (list [:dispatch [:get-profile username]]
-                                                [:dispatch [:change-profile-page-tab :favorited-articles]])))))
+                                                [:dispatch [:change-profile-page-tab :favorited-articles username]])))))
 
 ;; --- navigation ---
+
+(re-frame/reg-event-fx :route-changed
+                       (fn-traced [{:keys [db]} _]
+                                  {:fx (actions-for-route (:current-route db))}))
 
 (re-frame/reg-event-fx :change-route
                        (fn-traced [{:keys [db]} [_ new-route]]
                                   {:db (assoc db :current-route new-route)
-                                   :fx (actions-for-route new-route)}))
+                                   :fx [[:dispatch [:route-changed]]]}))
 
 (re-frame/reg-fx :rfe-push-state
                  (fn-traced [route]
@@ -267,7 +271,7 @@
 (re-frame/reg-event-db :get-profile-success
                        (fn [db [_ result]]
                          (-> db
-                             (assoc :loading true)
+                             (assoc :loading false)
                              (assoc :profile (:profile result)))))
 
 (re-frame/reg-event-db :get-profile-fail
@@ -293,12 +297,12 @@
 ;; --- profile page ---
 
 (re-frame/reg-event-fx :change-profile-page-tab
-                       (fn-traced [{:keys [db]} [_ tab]]
+                       (fn-traced [{:keys [db]} [_ tab username]]
                                   {:db (assoc-in db [:profile-page :tab] tab)
                                    :fx (list
                                         (case tab
-                                          :my-articles [:dispatch [:get-articles-for-user "akydd"]]
-                                          :favorited-articles [:dispatch [:get-user-favorited-articles "akydd"]]))}))
+                                          :my-articles [:dispatch [:get-articles-for-user username]]
+                                          :favorited-articles [:dispatch [:get-user-favorited-articles username]]))}))
 
 (re-frame/reg-event-fx :get-articles-for-user
                        (fn-traced [{:keys [db]} [_ username]]
