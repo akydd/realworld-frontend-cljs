@@ -280,6 +280,7 @@
   (let [profile @(re-frame/subscribe [:profile])
         active-tab @(re-frame/subscribe [:profile-page-tab])
         articles @(re-frame/subscribe [:articles])
+        profile-is-me? @(re-frame/subscribe [:profile-is-me?])
         profile-link (str "#/profile/" (:username profile))]
     [:div.profile-page
      [:div.user-info
@@ -291,8 +292,10 @@
          [:p (:bio profile)]
          [:button.btn.btn-sm.btn-outline-secondary.action-btn
           [:i.ion-plus-round] (str "\u00A0 Follow " (:username profile))]
-         [:button.btn.btn-sm.btn-outline-secondary.action-btn
-          [:i.ion-gear-a "\u00A0 Edit Profile Settings"]]]]]]
+
+         (when profile-is-me?
+           [:button.btn.btn-sm.btn-outline-secondary.action-btn
+            [:i.ion-gear-a "\u00A0 Edit Profile Settings"]])]]]]
 
      [:div.container
       [:div.row

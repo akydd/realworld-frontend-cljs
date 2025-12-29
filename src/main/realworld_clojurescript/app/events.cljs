@@ -284,7 +284,28 @@
                        [(re-frame/inject-cofx :cookie/get [:token])]
                        (fn-traced [cofx]
                                   (when-let [token (:cookie/get cofx)]
-                                    {:db (assoc (:db cofx) :token (:token token))})))
+                                    {:db (assoc (:db cofx) :token (:token token))
+                                     :fx [[:dispatch [:get-current-user]]]})))
+
+(re-frame/reg-event-fx :get-current-user
+                       (fn-traced [{:keys [db]}]
+                                  {:db (assoc db :loading true)
+                                   :http-xhrio {:method :get
+                                                :headers {"Authorization" (str "Token " (:token db))}
+                                                :uri (str base-url "/user")
+                                                :response-format (ajax/json-response-format {:keywords? true})
+                                                :on-success [:get-current-user-success]
+                                                :on-failure [:get-current-user-fail]}}))
+
+(re-frame/reg-event-db :get-current-user-success
+                       (fn-traced [db [_ result]]
+                                  (-> db
+                                      (assoc :current-user (:user (dissoc result :token)))
+                                      (assoc :loading false))))
+
+(re-frame/reg-event-db :get-current-user-fail
+                       (fn-traced [db [_ result]]
+                                  (assoc db :loading false)))
 
 (re-frame/reg-event-fx :logout
                        (fn-traced [{:keys [db]}]

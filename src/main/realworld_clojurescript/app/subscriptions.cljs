@@ -89,3 +89,9 @@
 (re-frame/reg-sub :profile-page-tab
                   (fn [db _]
                     (get-in db [:profile-page :tab])))
+
+(re-frame/reg-sub :profile-is-me?
+                  (fn [db _]
+                    (let [me (get-in db [:current-user :username])
+                          profile (get-in db [:profile :username])]
+                      (= me profile))))
