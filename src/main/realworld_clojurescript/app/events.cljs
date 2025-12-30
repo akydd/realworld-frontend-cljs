@@ -53,7 +53,8 @@
                                       [:dispatch [:change-profile-page-tab :my-articles username]]))
       (= route-name :profile-favorites) (let [username (get-in route [:path-params :username])]
                                           (list [:dispatch [:get-profile username]]
-                                                [:dispatch [:change-profile-page-tab :favorited-articles username]])))))
+                                                [:dispatch [:change-profile-page-tab :favorited-articles username]]))
+      (= route-name :settings) (list [:dispatch [:clear-settings-form]]))))
 
 ;; --- navigation ---
 
@@ -95,17 +96,9 @@
 
 ;; ---- sign up form ---
 
-(re-frame/reg-event-db :update-reg-form-name
-                       (fn-traced [db [_ name]]
-                                  (assoc-in db [:forms :reg-form :fields :username] name)))
-
-(re-frame/reg-event-db :update-reg-form-email
-                       (fn-traced [db [_ email]]
-                                  (assoc-in db [:forms :reg-form :fields :email] email)))
-
-(re-frame/reg-event-db :update-reg-form-password
-                       (fn-traced [db [_ password]]
-                                  (assoc-in db [:forms :reg-form :fields :password] password)))
+(re-frame/reg-event-db :update-form
+                       (fn-traced [db [_ form-id form-field value]]
+                                  (assoc-in db [:forms form-id :fields form-field] value)))
 
 (re-frame/reg-event-db :clear-reg-form
                        (fn [db]
@@ -140,14 +133,6 @@
                                       (assoc-in [:forms :reg-form :error] result))))
 
 ;; --- login form ---
-
-(re-frame/reg-event-db :update-login-form-email
-                       (fn [db [_ email]]
-                         (assoc-in db [:forms :login-form :fields :email] email)))
-
-(re-frame/reg-event-db :update-login-form-password
-                       (fn [db [_ password]]
-                         (assoc-in db [:forms :login-form :fields :password] password)))
 
 (re-frame/reg-event-db :clear-login-form
                        (fn-traced [db _]
@@ -342,3 +327,13 @@
                                                 :response-format (ajax/json-response-format {:keywords? true})
                                                 :on-success [:get-articles-success]
                                                 :on-failure [:get-article-fail]}}))
+
+;; --- settings form ---
+
+(re-frame/reg-event-db :clear-settings-form
+                       (fn [db]
+                         (assoc-in db [:forms :settings-form :fields] {:image ""
+                                                                       :username ""
+                                                                       :bio ""
+                                                                       :email ""
+                                                                       :password ""})))

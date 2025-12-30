@@ -28,22 +28,25 @@
                               :label "\u00A0Settings"}
                     ^{:key "1"} [:i.ion-gear-a]])
        (when token [nav-link {:link (str "/profile/" (:username current-user))
-                              :route :settings
+                              :route :profile
                               :label (:username current-user)}])
        (when-not token [nav-link {:link "/login"
                                   :route :login
                                   :label "Sign in"}])
        (when-not token [nav-link {:link  "/register"
                                   :route :register
-                                  :label "Sign up"}])
-       (when token [:li.nav-item
-                    [:a.nav-link.active {:href "#"
-                                         :on-click #(re-frame/dispatch [:logout])} "Logout"]])]]]))
+                                  :label "Sign up"}])]]]))
+
+(defn form-input [label type form-id form-field]
+  (let [value @(re-frame/subscribe [:form form-id form-field])]
+    [:fieldset.form-group
+     [:input.form-control.form-control-lg {:type type
+                                           :placeholder label
+                                           :value value
+                                           :on-change #(re-frame/dispatch [:update-form form-id form-field (-> % .-target .-value)])}]]))
 
 (defn login []
-  (let [email @(re-frame/subscribe [:login-form-email])
-        password @(re-frame/subscribe [:login-form-password])
-        form-complete? @(re-frame/subscribe [:login-form-complete?])
+  (let [form-complete? @(re-frame/subscribe [:login-form-complete?])
         error @(re-frame/subscribe [:login-form-error])]
     [:div.auth-page
      [:div.container.page
@@ -58,26 +61,15 @@
            [:li (:status-text "Invalid username or password")]])
 
         [:form
-         [:fieldset.form-group
-          [:input.form-control.form-control-lg {:type "text"
-                                                :placeholder "Email"
-                                                :value email
-                                                :on-change #(re-frame/dispatch [:update-login-form-email (-> % .-target .-value)])}]]
-         [:fieldset.form-group
-          [:input.form-control.form-control-lg {:type "password"
-                                                :placeholder "Password"
-                                                :value password
-                                                :on-change #(re-frame/dispatch [:update-login-form-password (-> % .-target .-value)])}]]
+         [form-input "Email" "text" :login-form :email]
+         [form-input "Password" "password" :login-form :password]
          [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-complete?)
                                                         :on-click (fn [e]
                                                                     (.preventDefault e)
                                                                     (re-frame/dispatch [:post-users-login]))} "Sign in"]]]]]]))
 
 (defn register []
-  (let [name @(re-frame/subscribe [:reg-form-name])
-        email @(re-frame/subscribe [:reg-form-email])
-        password @(re-frame/subscribe [:reg-form-password])
-        form-complete? @(re-frame/subscribe [:reg-form-complete?])
+  (let [form-complete? @(re-frame/subscribe [:reg-form-complete?])
         error @(re-frame/subscribe [:reg-form-error])]
     [:div.auth-page
      [:div.container.page
@@ -92,21 +84,9 @@
            [:li (:status-text error)]])
 
         [:form
-         [:fieldset.form-group
-          [:input.form-control.form-control-lg {:type "text"
-                                                :value name
-                                                :placeholder "Username"
-                                                :on-change #(re-frame/dispatch [:update-reg-form-name (-> % .-target .-value)])}]]
-         [:fieldset.form-group
-          [:input.form-control.form-control-lg {:type "text"
-                                                :value email
-                                                :placeholder "Email"
-                                                :on-change #(re-frame/dispatch [:update-reg-form-email (-> % .-target .-value)])}]]
-         [:fieldset.form-group
-          [:input.form-control.form-control-lg {:type "password"
-                                                :value password
-                                                :placeholder "Password"
-                                                :on-change #(re-frame/dispatch [:update-reg-form-password (-> % .-target .-value)])}]]
+         [form-input "Username" "text" :reg-form :username]
+         [form-input "Email" "text" :reg-form :email]
+         [form-input "Password" "password" :reg-form :password]
          [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-complete?)
                                                         :on-click (fn [e]
                                                                     (.preventDefault e)
@@ -181,35 +161,38 @@
             ^{:key tag} [:a.tag-pill.tag-default tag])]]]]]]))
 
 (defn settings []
-  [:div.settings-page
-   [:div.container.page
-    [:div.row
-     [:div.col-md-6.offset-md-3.col-xs-12
-      [:h1.text-xs-center "Your Settings"]
+  (let [image @(re-frame/subscribe [:form :settings-form :image])
+        bio @(re-frame/subscribe [:form :settings-form :bio])
+        error @(re-frame/subscribe [:settings-form-error])]
+    [:div.settings-page
+     [:div.container.page
+      [:div.row
+       [:div.col-md-6.offset-md-3.col-xs-12
+        [:h1.text-xs-center "Your Settings"]
 
-      [:ul.error-messages
-       [:li "That name is required"]]
+        (when error
+          [:ul.error-messages
+           [:li "That name is required"]])
 
-      [:form
-       [:fieldset
-        [:fieldset.form-group
-         [:input.form-control {:type "text"
-                               :placeholder "URL of profile picture"}]]
-        [:fieldset.form-group
-         [:input.form-control.form-control-lg {:type "text"
-                                               :placeholder "Your Name"}]]
-        [:fieldset.form-group
-         [:textarea.form-control.form-control-lg {:placeholder "Short bio about you"
-                                                  :rows 8}]]
-        [:fieldset.form-group
-         [:input.form-control.form-control-lg {:type "text"
-                                               :placeholder "Email"}]]
-        [:fieldset.form-group
-         [:input.form-control.form-control-lg {:type "password"
-                                               :placeholder "New Password"}]]
-        [:button.btn.btn-lg.btn-primary.pull-xs-right "Update Settings"]]]
-      [:hr]
-      [:button.btn.btn-outline-danger "Or click here to logout"]]]]])
+        [:form
+         [:fieldset
+          [:fieldset.form-group
+           [:input.form-control {:type "text"
+                                 :value image
+                                 :placeholder "URL of profile picture"
+                                 :on-change #(re-frame/dispatch [:update-form :settings-form :image (-> % .-target .-value)])}]]
+          [form-input "Your Name" "text" :settings-form :username]
+          [:fieldset.form-group
+           [:textarea.form-control.form-control-lg {:value bio
+                                                    :placeholder "Short bio about you"
+                                                    :rows 8
+                                                    :on-change #(re-frame/dispatch [:update-form :settings-form :bio (-> % .-target .-value)])}]]
+          [form-input "Email" "text" :settings-form :email]
+          [form-input "New Password" "password" :settings-form :password]
+          [:button.btn.btn-lg.btn-primary.pull-xs-right "Update Settings"]]]
+        [:hr]
+        [:button.btn.btn-outline-danger {:on-click #(re-frame/dispatch [:logout])}
+         "Or click here to logout"]]]]]))
 
 (defn article-meta [article profile]
   (let [profile-link (str "/#/profile/" (:username profile))]
@@ -295,6 +278,7 @@
 
          (when profile-is-me?
            [:button.btn.btn-sm.btn-outline-secondary.action-btn
+            {:on-click #()}
             [:i.ion-gear-a "\u00A0 Edit Profile Settings"]])]]]]
 
      [:div.container

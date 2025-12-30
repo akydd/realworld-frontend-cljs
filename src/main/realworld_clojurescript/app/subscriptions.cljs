@@ -8,18 +8,6 @@
 
 ;; --- sign up form ---
 
-(re-frame/reg-sub :reg-form-name
-                  (fn [db _]
-                    (get-in db [:forms :reg-form :fields :username])))
-
-(re-frame/reg-sub :reg-form-email
-                  (fn [db _]
-                    (get-in db [:forms :reg-form :fields :email])))
-
-(re-frame/reg-sub :reg-form-password
-                  (fn [db _]
-                    (get-in db [:forms :reg-form :fields :password])))
-
 (re-frame/reg-sub :reg-form-complete?
                   (fn [db _]
                     (every? not-empty (vals (get-in db [:forms :reg-form :fields])))))
@@ -28,15 +16,13 @@
                   (fn [db _]
                     (get-in db [:forms :reg-form :error])))
 
+;; --- generic form ---
+
+(re-frame/reg-sub :form
+                  (fn [db [_ form-id form-field]]
+                    (get-in db [:forms form-id :fields form-field])))
+
 ;; --- login form ---
-
-(re-frame/reg-sub :login-form-email
-                  (fn [db _]
-                    (get-in db [:forms :login-form :fields :email])))
-
-(re-frame/reg-sub :login-form-password
-                  (fn [db _]
-                    (get-in db [:forms :login-form :fields :password])))
 
 (re-frame/reg-sub :login-form-complete?
                   (fn [db _]
@@ -95,3 +81,9 @@
                     (let [me (get-in db [:current-user :username])
                           profile (get-in db [:profile :username])]
                       (= me profile))))
+
+;; --- settings form ---
+
+(re-frame/reg-sub :settings-form-error
+                  (fn [db _]
+                    (get-in db [:forms :settings-form :error])))
