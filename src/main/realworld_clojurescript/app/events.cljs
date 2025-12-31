@@ -340,7 +340,8 @@
 
 (re-frame/reg-event-fx :put-update-user
                        (fn [{:keys [db]}]
-                         (let [user (get-in db [:forms :settings-form :fields])]
+                         (let [user (get-in db [:forms :settings-form :fields])
+                               user (into {} (filter (fn [[_ v]] (not= "" v)) user))]
                            {:db (assoc db :loading true)
                             :http-xhrio {:method :put
                                          :uri (str base-url "/user")

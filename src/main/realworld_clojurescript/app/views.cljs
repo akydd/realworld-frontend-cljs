@@ -13,7 +13,8 @@
 
 (defn header []
   (let [token @(re-frame/subscribe [:token])
-        current-user @(re-frame/subscribe [:current-user])]
+        current-user @(re-frame/subscribe [:current-user])
+        username (:username current-user)]
     [:nav.navbar.navbar-light
      [:div.container
       [:a.navbar-brand "Conduit"]
@@ -27,9 +28,11 @@
                               :route :settings
                               :label "\u00A0Settings"}
                     ^{:key "1"} [:i.ion-gear-a]])
-       (when token [nav-link {:link (str "/profile/" (:username current-user))
+       (when token [nav-link {:link (str "/profile/" username)
                               :route :profile
-                              :label (:username current-user)}])
+                              :label username}
+                    (when (:image current-user)
+                      ^{:key "1"} [:img.user-pic {:src (:image current-user)}])])
        (when-not token [nav-link {:link "/login"
                                   :route :login
                                   :label "Sign in"}])
@@ -190,7 +193,10 @@
                                                     :on-change #(re-frame/dispatch [:update-form :settings-form :bio (-> % .-target .-value)])}]]
           [form-input "Email" "text" :settings-form :email]
           [form-input "New Password" "password" :settings-form :password]
-          [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-not-empty?)}
+          [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-not-empty?)
+                                                         :on-click (fn [e]
+                                                                     (.preventDefault e)
+                                                                     (re-frame/dispatch [:put-update-user]))}
            "Update Settings"]]]
         [:hr]
         [:button.btn.btn-outline-danger {:on-click #(re-frame/dispatch [:logout])}
