@@ -87,3 +87,7 @@
 (re-frame/reg-sub :settings-form-error
                   (fn [db _]
                     (get-in db [:forms :settings-form :error])))
+
+(re-frame/reg-sub :settings-form-not-empty?
+                  (fn [db _]
+                    (boolean (some not-empty (vals (get-in db [:forms :settings-form :fields]))))))

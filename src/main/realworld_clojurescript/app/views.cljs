@@ -163,6 +163,7 @@
 (defn settings []
   (let [image @(re-frame/subscribe [:form :settings-form :image])
         bio @(re-frame/subscribe [:form :settings-form :bio])
+        form-not-empty? @(re-frame/subscribe [:settings-form-not-empty?])
         error @(re-frame/subscribe [:settings-form-error])]
     [:div.settings-page
      [:div.container.page
@@ -189,7 +190,8 @@
                                                     :on-change #(re-frame/dispatch [:update-form :settings-form :bio (-> % .-target .-value)])}]]
           [form-input "Email" "text" :settings-form :email]
           [form-input "New Password" "password" :settings-form :password]
-          [:button.btn.btn-lg.btn-primary.pull-xs-right "Update Settings"]]]
+          [:button.btn.btn-lg.btn-primary.pull-xs-right {:disabled (not form-not-empty?)}
+           "Update Settings"]]]
         [:hr]
         [:button.btn.btn-outline-danger {:on-click #(re-frame/dispatch [:logout])}
          "Or click here to logout"]]]]]))

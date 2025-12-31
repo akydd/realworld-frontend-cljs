@@ -337,3 +337,30 @@
                                                                        :bio ""
                                                                        :email ""
                                                                        :password ""})))
+
+(re-frame/reg-event-fx :put-update-user
+                       (fn [{:keys [db]}]
+                         (let [user (get-in db [:forms :settings-form :fields])]
+                           {:db (assoc db :loading true)
+                            :http-xhrio {:method :put
+                                         :uri (str base-url "/user")
+                                         :params {:user user}
+                                         :headers {"Authorization" (str "Token " (:token db))}
+                                         :format (ajax/json-request-format)
+                                         :response-format (ajax/json-response-format {:keywords? true})
+                                         :on-success [:put-user-success]
+                                         :on-failure [:put-user-fail]}})))
+
+(re-frame/reg-event-fx :put-user-success
+                       (fn [{:keys [db]} [_ result]]
+                         {:db (-> db
+                                  (assoc :loading false)
+                                  (assoc :current-user (dissoc (:user result) :token)))
+                          :fx [[:dispatch [:clear-settings-form]]
+                               [:dispatch [:push-state :home]]]}))
+
+(re-frame/reg-event-db :put-user-fail
+                       (fn [db [_ result]]
+                         (-> db
+                             (assoc :loading false)
+                             (assoc-in [:forms :settings-form :error] result))))
