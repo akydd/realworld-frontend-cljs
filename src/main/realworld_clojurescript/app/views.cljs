@@ -269,6 +269,7 @@
 
 (defn profile []
   (let [profile @(re-frame/subscribe [:profile])
+        username (:username profile)
         active-tab @(re-frame/subscribe [:profile-page-tab])
         articles @(re-frame/subscribe [:articles])
         profile-is-me? @(re-frame/subscribe [:profile-is-me?])
@@ -279,14 +280,28 @@
        [:div.row
         [:div.col-xs-12.col-md-10.offset-md-1
          [:img.user-img {:src (:image profile)}]
-         [:h4 (:username profile)]
+         [:h4 username]
          [:p (:bio profile)]
-         [:button.btn.btn-sm.btn-outline-secondary.action-btn
-          [:i.ion-plus-round] (str "\u00A0 Follow " (:username profile))]
+
+         (when (contains? profile :following)
+           (if (:following profile)
+             [:button.btn.btn-sm.btn-outline-secondary.action-btn
+              {:on-click (fn [e]
+                           (.preventDefault e)
+                           (re-frame/dispatch [:unfollow username]))}
+              [:i.ion-minus-round] (str "\u00A0 Unfollow " username)]
+
+             [:button.btn.btn-sm.btn-outline-secondary.action-btn
+              {:on-click (fn [e]
+                           (.preventDefault e)
+                           (re-frame/dispatch [:follow username]))}
+              [:i.ion-plus-round] (str "\u00A0 Follow " username)]))
 
          (when profile-is-me?
            [:button.btn.btn-sm.btn-outline-secondary.action-btn
-            {:on-click #()}
+            {:on-click (fn [e]
+                         (.preventDefault e)
+                         (re-frame/dispatch [:push-state :settings]))}
             [:i.ion-gear-a "\u00A0 Edit Profile Settings"]])]]]]
 
      [:div.container

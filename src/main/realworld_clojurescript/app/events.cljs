@@ -247,11 +247,12 @@
 (re-frame/reg-event-fx :get-profile
                        (fn [{:keys [db]} [_ username]]
                          {:db (assoc db :loading true)
-                          :http-xhrio {:method :get
-                                       :uri (str base-url "/profiles/" username)
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :on-success [:get-profile-success]
-                                       :on-failure [:get-profile-fail]}}))
+                          :http-xhrio (cond-> {:method :get
+                                               :uri (str base-url "/profiles/" username)
+                                               :response-format (ajax/json-response-format {:keywords? true})
+                                               :on-success [:get-profile-success]
+                                               :on-failure [:get-profile-fail]}
+                                        (:token db) (assoc :headers {"Authorization" (str "Token " (:token db))}))}))
 
 (re-frame/reg-event-db :get-profile-success
                        (fn [db [_ result]]
@@ -268,8 +269,8 @@
 (re-frame/reg-event-fx :get-token
                        [(re-frame/inject-cofx :cookie/get [:token])]
                        (fn-traced [cofx]
-                                  (when-let [token (:cookie/get cofx)]
-                                    {:db (assoc (:db cofx) :token (:token token))
+                                  (when-let [token (:token (:cookie/get cofx))]
+                                    {:db (assoc (:db cofx) :token token)
                                      :fx [[:dispatch [:get-current-user]]]})))
 
 (re-frame/reg-event-fx :get-current-user
