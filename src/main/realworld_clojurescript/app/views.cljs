@@ -288,13 +288,13 @@
              [:button.btn.btn-sm.btn-outline-secondary.action-btn
               {:on-click (fn [e]
                            (.preventDefault e)
-                           (re-frame/dispatch [:unfollow username]))}
+                           (re-frame/dispatch [:follow-profile username :unfollow]))}
               [:i.ion-minus-round] (str "\u00A0 Unfollow " username)]
 
              [:button.btn.btn-sm.btn-outline-secondary.action-btn
               {:on-click (fn [e]
                            (.preventDefault e)
-                           (re-frame/dispatch [:follow username]))}
+                           (re-frame/dispatch [:follow-profile username :follow]))}
               [:i.ion-plus-round] (str "\u00A0 Follow " username)]))
 
          (when profile-is-me?

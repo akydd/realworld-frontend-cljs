@@ -366,3 +366,21 @@
                          (-> db
                              (assoc :loading false)
                              (assoc-in [:forms :settings-form :error] result))))
+
+;; --- follow user ---
+
+(re-frame/reg-event-fx :follow-profile
+                       (fn [{:keys [db]} [_ username action]]
+                         (let [method (if (= action :follow) :post :delete)]
+                           {:db (assoc db :loading true)
+                            :http-xhrio {:method method
+                                         :uri (str base-url "/profiles/" username "/follow")
+                                         :headers {"Authorization" (str "Token " (:token db))}
+                                         :format (ajax/json-request-format)
+                                         :response-format (ajax/json-response-format {:keywords? true})
+                                         :on-success [:get-profile-success]
+                                         :on-failure [:post-profile-fail]}})))
+
+(re-frame/reg-event-db :post-profile-fail
+                       (fn [db [_ result]]
+                         (assoc db :loading false)))
