@@ -266,22 +266,26 @@
 
 ;; --- auth ---
 
+(def cookie-interceptor
+  (re-frame/inject-cofx :cookie/get [:token]))
+
 (re-frame/reg-event-fx :get-token
-                       [(re-frame/inject-cofx :cookie/get [:token])]
+                       [cookie-interceptor]
                        (fn-traced [cofx]
                                   (when-let [token (:token (:cookie/get cofx))]
                                     {:db (assoc (:db cofx) :token token)
                                      :fx [[:dispatch [:get-current-user]]]})))
 
 (re-frame/reg-event-fx :get-current-user
-                       (fn-traced [{:keys [db]}]
-                                  {:db (assoc db :loading true)
-                                   :http-xhrio {:method :get
-                                                :headers {"Authorization" (str "Token " (:token db))}
-                                                :uri (str base-url "/user")
-                                                :response-format (ajax/json-response-format {:keywords? true})
-                                                :on-success [:get-current-user-success]
-                                                :on-failure [:get-current-user-fail]}}))
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get}]
+                         {:db (assoc db :loading true)
+                          :http-xhrio {:method :get
+                                       :headers {"Authorization" (str "Token " (:token cookie))}
+                                       :uri (str base-url "/user")
+                                       :response-format (ajax/json-response-format {:keywords? true})
+                                       :on-success [:get-current-user-success]
+                                       :on-failure [:get-current-user-fail]}}))
 
 (re-frame/reg-event-db :get-current-user-success
                        (fn-traced [db [_ result]]
@@ -340,14 +344,15 @@
                                                                        :password ""})))
 
 (re-frame/reg-event-fx :put-update-user
-                       (fn [{:keys [db]}]
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get}]
                          (let [user (get-in db [:forms :settings-form :fields])
                                user (into {} (filter (fn [[_ v]] (not= "" v)) user))]
                            {:db (assoc db :loading true)
                             :http-xhrio {:method :put
                                          :uri (str base-url "/user")
                                          :params {:user user}
-                                         :headers {"Authorization" (str "Token " (:token db))}
+                                         :headers {"Authorization" (str "Token " (:token cookie))}
                                          :format (ajax/json-request-format)
                                          :response-format (ajax/json-response-format {:keywords? true})
                                          :on-success [:put-user-success]
