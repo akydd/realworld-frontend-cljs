@@ -12,33 +12,32 @@
       label]]))
 
 (defn header []
-  (let [token @(re-frame/subscribe [:token])
-        current-user @(re-frame/subscribe [:current-user])
+  (let [current-user @(re-frame/subscribe [:current-user])
         username (:username current-user)]
     [:nav.navbar.navbar-light
      [:div.container
       [:a.navbar-brand "Conduit"]
       [:ul.nav.navbar-nav.pull-xs-right
        [nav-link {:link "/" :route :home :label "Home"}]
-       (when token [nav-link {:link "/editor"
-                              :route :editor
-                              :label "\u00A0New Article"}
-                    ^{:key "1"} [:i.ion-compose]])
-       (when token [nav-link {:link "/settings"
-                              :route :settings
-                              :label "\u00A0Settings"}
-                    ^{:key "1"} [:i.ion-gear-a]])
-       (when token [nav-link {:link (str "/profile/" username)
-                              :route :profile
-                              :label username}
-                    (when (:image current-user)
-                      ^{:key "1"} [:img.user-pic {:src (:image current-user)}])])
-       (when-not token [nav-link {:link "/login"
-                                  :route :login
-                                  :label "Sign in"}])
-       (when-not token [nav-link {:link  "/register"
-                                  :route :register
-                                  :label "Sign up"}])]]]))
+       (when current-user [nav-link {:link "/editor"
+                                     :route :editor
+                                     :label "\u00A0New Article"}
+                           ^{:key "1"} [:i.ion-compose]])
+       (when current-user [nav-link {:link "/settings"
+                                     :route :settings
+                                     :label "\u00A0Settings"}
+                           ^{:key "1"} [:i.ion-gear-a]])
+       (when current-user [nav-link {:link (str "/profile/" username)
+                                     :route :profile
+                                     :label username}
+                           (when (:image current-user)
+                             ^{:key "1"} [:img.user-pic {:src (:image current-user)}])])
+       (when-not current-user [nav-link {:link "/login"
+                                         :route :login
+                                         :label "Sign in"}])
+       (when-not current-user [nav-link {:link  "/register"
+                                         :route :register
+                                         :label "Sign up"}])]]]))
 
 (defn form-input [label type form-id form-field]
   (let [value @(re-frame/subscribe [:form form-id form-field])]
@@ -126,7 +125,7 @@
            ^{:key tag} [:li.tag-default.tag-pill.tag-outline tag])])]]))
 
 (defn home []
-  (let [token @(re-frame/subscribe [:token])
+  (let [current-user @(re-frame/subscribe [:current-user])
         active-tab @(re-frame/subscribe [:home-page-active-tab])
         tags @(re-frame/subscribe [:tags])
         articles @(re-frame/subscribe [:articles])]
@@ -143,7 +142,7 @@
         [:div.feed-toggle
          [:ul.nav.nav-pills.outline-active
 
-          (when token
+          (when current-user
             [:li.nav-item
              [:a.nav-link {:href ""} "Your Feed"]])
 

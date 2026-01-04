@@ -12,7 +12,6 @@
                                    :current-route nil
                                    :current-user nil
                                    :profile nil
-                                   :token nil
                                    :comments nil
                                    :articles nil
                                    :tags nil
@@ -41,8 +40,7 @@
   (let [route-name (get-in route [:data :name])]
     (cond
       (= route-name :home) (list [:dispatch [:get-tags]]
-                                 [:dispatch [:change-home-page-tab :global]]
-                                 [:dispatch [:get-token]])
+                                 [:dispatch [:change-home-page-tab :global]])
       (= route-name :article-page) (let [slug (get-in route [:path-params :slug])]
                                      (list [:dispatch [:get-article slug]]
                                            [:dispatch [:get-comments slug]]))
@@ -56,11 +54,48 @@
                                                 [:dispatch [:change-profile-page-tab :favorited-articles username]]))
       (= route-name :settings) (list [:dispatch [:clear-settings-form]]))))
 
+;; --- auth ---
+
+(def cookie-interceptor
+  (re-frame/inject-cofx :cookie/get [:token]))
+
+(defn get-current-user-fx [{db :db cookie :cookie/get}]
+  {:db (assoc db :loading true)
+   :http-xhrio {:method :get
+                :headers {"Authorization" (str "Token " (:token cookie))}
+                :uri (str base-url "/user")
+                :response-format (ajax/json-response-format {:keywords? true})
+                :on-success [:get-current-user-success]
+                :on-failure [:get-current-user-fail]}})
+
+(re-frame/reg-event-fx :get-current-user
+                       [cookie-interceptor]
+                       get-current-user-fx)
+
+(re-frame/reg-event-db :get-current-user-success
+                       (fn-traced [db [_ result]]
+                                  (-> db
+                                      (assoc :current-user (:user (dissoc result :token)))
+                                      (assoc :loading false))))
+
+(re-frame/reg-event-db :get-current-user-fail
+                       (fn-traced [db [_ result]]
+                                  (assoc db :loading false)))
+
+(re-frame/reg-event-fx :logout
+                       (fn-traced [{:keys [db]}]
+                                  {:db (-> db
+                                           (assoc :current-user nil))
+                                   :cookie/remove {:name "token"
+                                                   :on-success [:push-state :home]}}))
+
 ;; --- navigation ---
 
 (re-frame/reg-event-fx :route-changed
-                       (fn-traced [{:keys [db]} _]
-                                  {:fx (actions-for-route (:current-route db))}))
+                       [cookie-interceptor]
+                       (fn-traced [{db :db cookie :cookie/get}]
+                                  {:fx (cond->> (actions-for-route (:current-route db))
+                                         (:token cookie) (cons [:dispatch [:get-current-user]]))}))
 
 (re-frame/reg-event-fx :change-route
                        (fn-traced [{:keys [db]} [_ new-route]]
@@ -163,7 +198,6 @@
 (re-frame/reg-event-fx :post-users-login-success
                        (fn-traced [{:keys [db]} [_ result]]
                                   {:db (assoc db :loading false
-                                              :token (get-in result [:user :token])
                                               :current-user (dissoc (:user result) :token))
                                    :cookie/set {:name "token"
                                                 :value (get-in result [:user :token])
@@ -245,14 +279,15 @@
 ;; --- profile ---
 
 (re-frame/reg-event-fx :get-profile
-                       (fn [{:keys [db]} [_ username]]
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get} [_ username]]
                          {:db (assoc db :loading true)
                           :http-xhrio (cond-> {:method :get
                                                :uri (str base-url "/profiles/" username)
                                                :response-format (ajax/json-response-format {:keywords? true})
                                                :on-success [:get-profile-success]
                                                :on-failure [:get-profile-fail]}
-                                        (:token db) (assoc :headers {"Authorization" (str "Token " (:token db))}))}))
+                                        (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
 
 (re-frame/reg-event-db :get-profile-success
                        (fn [db [_ result]]
@@ -263,47 +298,6 @@
 (re-frame/reg-event-db :get-profile-fail
                        (fn [db [_ result]]
                          (assoc db :loading false)))
-
-;; --- auth ---
-
-(def cookie-interceptor
-  (re-frame/inject-cofx :cookie/get [:token]))
-
-(re-frame/reg-event-fx :get-token
-                       [cookie-interceptor]
-                       (fn-traced [cofx]
-                                  (when-let [token (:token (:cookie/get cofx))]
-                                    {:db (assoc (:db cofx) :token token)
-                                     :fx [[:dispatch [:get-current-user]]]})))
-
-(re-frame/reg-event-fx :get-current-user
-                       [cookie-interceptor]
-                       (fn [{db :db cookie :cookie/get}]
-                         {:db (assoc db :loading true)
-                          :http-xhrio {:method :get
-                                       :headers {"Authorization" (str "Token " (:token cookie))}
-                                       :uri (str base-url "/user")
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :on-success [:get-current-user-success]
-                                       :on-failure [:get-current-user-fail]}}))
-
-(re-frame/reg-event-db :get-current-user-success
-                       (fn-traced [db [_ result]]
-                                  (-> db
-                                      (assoc :current-user (:user (dissoc result :token)))
-                                      (assoc :loading false))))
-
-(re-frame/reg-event-db :get-current-user-fail
-                       (fn-traced [db [_ result]]
-                                  (assoc db :loading false)))
-
-(re-frame/reg-event-fx :logout
-                       (fn-traced [{:keys [db]}]
-                                  {:db (-> db
-                                           (dissoc :current-user)
-                                           (dissoc :token))
-                                   :cookie/remove {:name "token"
-                                                   :on-success [:push-state :home]}}))
 
 ;; --- profile page ---
 
@@ -375,12 +369,13 @@
 ;; --- follow user ---
 
 (re-frame/reg-event-fx :follow-profile
-                       (fn [{:keys [db]} [_ username action]]
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get} [_ username action]]
                          (let [method (if (= action :follow) :post :delete)]
                            {:db (assoc db :loading true)
                             :http-xhrio {:method method
                                          :uri (str base-url "/profiles/" username "/follow")
-                                         :headers {"Authorization" (str "Token " (:token db))}
+                                         :headers {"Authorization" (str "Token " (:token cookie))}
                                          :format (ajax/json-request-format)
                                          :response-format (ajax/json-response-format {:keywords? true})
                                          :on-success [:get-profile-success]
