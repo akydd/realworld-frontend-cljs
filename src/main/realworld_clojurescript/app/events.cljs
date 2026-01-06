@@ -216,13 +216,15 @@
                                  [:dispatch [:get-articles]]))}))
 
 (re-frame/reg-event-fx :get-articles
-                       (fn [{:keys [db]}]
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get}]
                          {:db (assoc db :loading true)
-                          :http-xhrio {:method :get
-                                       :uri (str base-url "/articles")
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :on-success [:get-articles-success]
-                                       :on-failure [:get-articles-fail]}}))
+                          :http-xhrio (cond-> {:method :get
+                                               :uri (str base-url "/articles")
+                                               :response-format (ajax/json-response-format {:keywords? true})
+                                               :on-success [:get-articles-success]
+                                               :on-failure [:get-articles-fail]}
+                                        (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
 
 (re-frame/reg-event-db :get-articles-success
                        (fn [db [_ result]]
@@ -262,13 +264,15 @@
 ;; --- comments ---
 
 (re-frame/reg-event-fx :get-comments
-                       (fn [{:keys [db]} [_ slug]]
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get} [_ slug]]
                          {:db (assoc db :loading true)
-                          :http-xhrio {:method :get
-                                       :uri (str base-url "/articles/" slug "/comments")
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :on-success [:get-comments-success]
-                                       :on-failure [:get-comments-fail]}}))
+                          :http-xhrio (cond-> {:method :get
+                                               :uri (str base-url "/articles/" slug "/comments")
+                                               :response-format (ajax/json-response-format {:keywords? true})
+                                               :on-success [:get-comments-success]
+                                               :on-failure [:get-comments-fail]}
+                                        (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
 
 (re-frame/reg-event-db :get-comments-success
                        (fn [db [_ result]]
