@@ -201,40 +201,47 @@
         [:button.btn.btn-outline-danger {:on-click #(re-frame/dispatch [:logout])}
          "Or click here to logout"]]]]]))
 
-(defn article-meta [article profile]
-  (let [profile-link (str "/#/profile/" (:username profile))]
+(defn article-meta []
+  (let [article @(re-frame/subscribe [:current-article])
+        author (:author article)
+        current-user @(re-frame/subscribe [:current-user])
+        profile-link (str "/#/profile/" (:username author))]
     [:div.article-meta
      [:a {:href profile-link}
-      [:img {:src (:image profile)}]]
+      [:img {:src (:image author)}]]
      [:div.info
-      [:a.author {:href profile-link} (:username profile)]
+      [:a.author {:href profile-link} (:username author)]
       [:span.date (:updatedAt article)]]
 
-     [:button.btn.btn-sm.btn-outline-secondary
-      [:i.ion-plus-round]
-      (str "\u00A0" " Follow " (:username profile) "\u00A0")
-      [:span.counter "(10)"]]
+     (when current-user
+       [:button.btn.btn-sm.btn-outline-secondary
+        [:i.ion-plus-round]
+        (str "\u00A0" " Follow " (:username author) "\u00A0")
+        [:span.counter "(10)"]])
+
      "\u00A0\u00A0"
      [:button.btn.btn-sm.btn-outline-primary
       [:i.ion-heart]
       (str "\u00A0" " Favorite Post" "\u00A0")
       [:span.counter (str "(" (:favoritesCount article) ")")]]
 
-     [:button.btn.btn-sm.btn-outline-secondary
-      [:i.ion-edit] "\u00A0Edit Article"]
+     (when (= (:username current-user) (:username author))
+       [:button.btn.btn-sm.btn-outline-secondary
+        [:i.ion-edit] "\u00A0Edit Article"])
 
-     [:button.btn.btn-sm.btn-outline-danger
-      [:i.ion-trash-a] "\u00A0Delete Article"]]))
+     (when (= (:username current-user) (:username author))
+       [:button.btn.btn-sm.btn-outline-danger
+        [:i.ion-trash-a] "\u00A0Delete Article"])]))
 
 (defn article-page []
   (let [article @(re-frame/subscribe [:current-article])
         comments @(re-frame/subscribe [:comments])
-        profile (:author article)]
+        current-user @(re-frame/subscribe [:current-user])]
     [:div.article-page
      [:div.banner
       [:div.container
        [:h1 (:title article)]
-       [article-meta article profile]]]
+       [article-meta]]]
 
      [:div.container.page
       [:div.row.article-content
@@ -247,7 +254,7 @@
       [:hr]
 
       [:div.article-actions
-       [article-meta article profile]]
+       [article-meta]]
 
       [:div.row
        [:div.col-xs-12.col-md-8.offset-md-2
@@ -260,11 +267,15 @@
                                     [:p.card-text (:body comment)]]
                                    [:div.card-footer
                                     [:a.comment-author {:href author-link}
-                                     [:img {:src (:image author)}]]
+                                     [:img.comment-author-img {:src (:image author)}]]
+                                    "\u00A0"
                                     [:a.comment-author {:href author-link} (:username author)]
                                     [:span.date-posted (:updatedAt comment)]
-                                    [:span.mod-options
-                                     [:i.ion-trash-d]]]]))]]]]))
+
+                                    (when (= (:username current-user) (:username author))
+                                      [:span.mod-options
+                                       [:i.ion-trash-a
+                                        {:on-click #(re-frame/dispatch [:delete-comment (:id comment)])}]])]]))]]]]))
 
 (defn profile []
   (let [profile @(re-frame/subscribe [:profile])

@@ -238,13 +238,15 @@
 ;; --- articles page ---
 
 (re-frame/reg-event-fx :get-article
-                       (fn [{:keys [db]} [_ slug]]
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get} [_ slug]]
                          {:db (assoc db :loading true)
-                          :http-xhrio {:method :get
-                                       :uri (str base-url "/articles/" slug)
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :on-success [:get-article-success]
-                                       :on-failure [:get-article-fail]}}))
+                          :http-xhrio (cond-> {:method :get
+                                               :uri (str base-url "/articles/" slug)
+                                               :response-format (ajax/json-response-format {:keywords? true})
+                                               :on-success [:get-article-success]
+                                               :on-failure [:get-article-fail]}
+                                        (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
 
 (re-frame/reg-event-db :get-article-success
                        (fn [db [_ result]]
@@ -256,6 +258,8 @@
                        (fn [db _]
                          (-> db
                              (assoc :loading false))))
+
+;; --- comments ---
 
 (re-frame/reg-event-fx :get-comments
                        (fn [{:keys [db]} [_ slug]]
@@ -273,6 +277,22 @@
                              (assoc :comments (:comments result)))))
 
 (re-frame/reg-event-db :get-comments-fail
+                       (fn [db [_ result]]
+                         (assoc db :loading false)))
+
+(re-frame/reg-event-fx :delete-comment
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get} [_ id]]
+                         (let [slug (get-in db [:current-article :slug])]
+                           {:db (assoc db :loading true)
+                            :http-xhrio {:method :delete
+                                         :uri (str base-url "/articles/" slug "/comments/" id)
+                                         :headers {"Authorization" (str "Token " (:token cookie))}
+                                         :request-format (ajax/json-response-format {:keywords? true})
+                                         :on-success [:get-comments slug]
+                                         :on-failure [:delete-comment-fail]}})))
+
+(re-frame/reg-event-db :delete-comment-fail
                        (fn [db [_ result]]
                          (assoc db :loading false)))
 
