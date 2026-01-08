@@ -334,22 +334,26 @@
                                           :favorited-articles [:dispatch [:get-user-favorited-articles username]]))}))
 
 (re-frame/reg-event-fx :get-articles-for-user
-                       (fn-traced [{:keys [db]} [_ username]]
+                       [cookie-interceptor]
+                       (fn-traced [{db :db cookie :cookie/get} [_ username]]
                                   {:db (assoc db :loading true)
-                                   :http-xhrio {:method :get
-                                                :uri (str base-url "/articles?author=" username)
-                                                :response-format (ajax/json-response-format {:keywords? true})
-                                                :on-success [:get-articles-success]
-                                                :on-failure [:get-article-fail]}}))
+                                   :http-xhrio (cond-> {:method :get
+                                                        :uri (str base-url "/articles?author=" username)
+                                                        :response-format (ajax/json-response-format {:keywords? true})
+                                                        :on-success [:get-articles-success]
+                                                        :on-failure [:get-article-fail]}
+                                                 (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
 
 (re-frame/reg-event-fx :get-user-favorited-articles
-                       (fn-traced [{:keys [db]} [_ username]]
+                       [cookie-interceptor]
+                       (fn-traced [{db :db cookie :cookie/get} [_ username]]
                                   {:db (assoc db :loading true)
-                                   :http-xhrio {:method :get
-                                                :uri (str base-url "/articles?favorited=" username)
-                                                :response-format (ajax/json-response-format {:keywords? true})
-                                                :on-success [:get-articles-success]
-                                                :on-failure [:get-article-fail]}}))
+                                   :http-xhrio (cond-> {:method :get
+                                                        :uri (str base-url "/articles?favorited=" username)
+                                                        :response-format (ajax/json-response-format {:keywords? true})
+                                                        :on-success [:get-articles-success]
+                                                        :on-failure [:get-article-fail]}
+                                                 (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
 
 ;; --- settings form ---
 
@@ -394,17 +398,33 @@
 
 (re-frame/reg-event-fx :follow-profile
                        [cookie-interceptor]
-                       (fn [{db :db cookie :cookie/get} [_ username action]]
-                         (let [method (if (= action :follow) :post :delete)]
+                       (fn [{db :db cookie :cookie/get}]
+                         (let [username (get-in db [:profile :username])
+                               following? (get-in db [:profile :following])]
                            {:db (assoc db :loading true)
-                            :http-xhrio {:method method
+                            :http-xhrio {:method (if following? :delete :post)
                                          :uri (str base-url "/profiles/" username "/follow")
                                          :headers {"Authorization" (str "Token " (:token cookie))}
                                          :format (ajax/json-request-format)
                                          :response-format (ajax/json-response-format {:keywords? true})
                                          :on-success [:get-profile-success]
-                                         :on-failure [:post-profile-fail]}})))
+                                         :on-failure [:follow-profile-fail]}})))
 
-(re-frame/reg-event-db :post-profile-fail
+(re-frame/reg-event-db :follow-profile-fail
                        (fn [db [_ result]]
                          (assoc db :loading false)))
+
+(re-frame/reg-event-fx :follow-author
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get}]
+                         (let [slug (get-in db [:current-article :slug])
+                               author (get-in db [:current-article :author :username])
+                               following? (get-in db [:current-article :author :following])]
+                           {:db (assoc db :loading true)
+                            :http-xhrio {:method (if following? :delete :post)
+                                         :uri (str base-url "/profiles/" author "/follow")
+                                         :headers {"Authorization" (str "Token " (:token cookie))}
+                                         :format (ajax/json-request-format)
+                                         :response-format (ajax/json-response-format {:keywords? true})
+                                         :on-success [:get-article slug]
+                                         :on-failure [:follow-profile-fail]}})))

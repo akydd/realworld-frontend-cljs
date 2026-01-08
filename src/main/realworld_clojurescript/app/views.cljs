@@ -119,9 +119,9 @@
       [:p (:description article)]
       [:span "Read more..."]
 
-      (when (seq (:tag-list article))
+      (when (seq (:tagList article))
         [:ul.tag-list
-         (for [tag (:tag-list article)]
+         (for [tag (:tagList article)]
            ^{:key tag} [:li.tag-default.tag-pill.tag-outline tag])])]]))
 
 (defn home []
@@ -213,17 +213,19 @@
       [:a.author {:href profile-link} (:username author)]
       [:span.date (:updatedAt article)]]
 
-     (when current-user
+     (when (contains? author :following)
        [:button.btn.btn-sm.btn-outline-secondary
-        [:i.ion-plus-round]
-        (str "\u00A0" " Follow " (:username author) "\u00A0")
-        [:span.counter "(10)"]])
+        {:on-click #(re-frame/dispatch [:follow-author])}
+        [:i {:class (if (:following author) "ion-minus-round" "ion-plus-round")}]
+        (str "\u00A0" (if (:following author) " Unfollow " " Follow ") (:username author) "\u00A0")
+        [:span.counter (str "(" (:favoritesCount article) ")")]])
 
      "\u00A0\u00A0"
-     [:button.btn.btn-sm.btn-outline-primary
-      [:i.ion-heart]
-      (str "\u00A0" " Favorite Post" "\u00A0")
-      [:span.counter (str "(" (:favoritesCount article) ")")]]
+     (when (contains? article :favorited)
+       [:button.btn.btn-sm.btn-outline-primary
+        [:i.ion-heart]
+        (str "\u00A0" (if (:favorited article) " Unfavorite " " Favorite ") "Post" "\u00A0")
+        [:span.counter (str "(" (:favoritesCount article) ")")]])
 
      (when (= (:username current-user) (:username author))
        [:button.btn.btn-sm.btn-outline-secondary
@@ -247,9 +249,10 @@
       [:div.row.article-content
        [:div.col-md-12 (:body article)
 
-        (for [tag (:tagList article)]
-          ^{:key tag} [:ul.tag-list
-                       [:li.tag-default.tag-pill.tag-outline tag]])]]
+        (when (seq (:tagList article))
+          [:ul.tag-list
+           (for [tag (:tagList article)]
+             ^{:key tag} [:li.tag-default.tag-pill.tag-outline tag])])]]
 
       [:hr]
 
@@ -294,18 +297,13 @@
          [:p (:bio profile)]
 
          (when (contains? profile :following)
-           (if (:following profile)
-             [:button.btn.btn-sm.btn-outline-secondary.action-btn
-              {:on-click (fn [e]
-                           (.preventDefault e)
-                           (re-frame/dispatch [:follow-profile username :unfollow]))}
-              [:i.ion-minus-round] (str "\u00A0 Unfollow " username)]
-
-             [:button.btn.btn-sm.btn-outline-secondary.action-btn
-              {:on-click (fn [e]
-                           (.preventDefault e)
-                           (re-frame/dispatch [:follow-profile username :follow]))}
-              [:i.ion-plus-round] (str "\u00A0 Follow " username)]))
+           [:button.btn.btn-sm.btn-outline-secondary.action-btn
+            {:on-click (fn [e]
+                         (.preventDefault e)
+                         (re-frame/dispatch [:follow-profile]))}
+            [:i
+             {:class (if (:following profile) "ion-minus-round" "ion-plus-round")}]
+            (str "\u00A0 " (if (:following profile) "Unfollow " "Follow ") username)])
 
          (when profile-is-me?
            [:button.btn.btn-sm.btn-outline-secondary.action-btn
