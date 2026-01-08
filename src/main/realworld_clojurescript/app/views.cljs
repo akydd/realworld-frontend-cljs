@@ -217,12 +217,12 @@
        [:button.btn.btn-sm.btn-outline-secondary
         {:on-click #(re-frame/dispatch [:follow-author])}
         [:i {:class (if (:following author) "ion-minus-round" "ion-plus-round")}]
-        (str "\u00A0" (if (:following author) " Unfollow " " Follow ") (:username author) "\u00A0")
-        [:span.counter (str "(" (:favoritesCount article) ")")]])
+        (str "\u00A0" (if (:following author) " Unfollow " " Follow ") (:username author) "\u00A0")])
 
      "\u00A0\u00A0"
      (when (contains? article :favorited)
        [:button.btn.btn-sm.btn-outline-primary
+        {:on-click #(re-frame/dispatch [:favorite-article])}
         [:i.ion-heart]
         (str "\u00A0" (if (:favorited article) " Unfavorite " " Favorite ") "Post" "\u00A0")
         [:span.counter (str "(" (:favoritesCount article) ")")]])

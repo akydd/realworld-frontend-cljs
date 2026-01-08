@@ -394,7 +394,7 @@
                              (assoc :loading false)
                              (assoc-in [:forms :settings-form :error] result))))
 
-;; --- follow user ---
+;; --- follow/unfollow user ---
 
 (re-frame/reg-event-fx :follow-profile
                        [cookie-interceptor]
@@ -428,3 +428,23 @@
                                          :response-format (ajax/json-response-format {:keywords? true})
                                          :on-success [:get-article slug]
                                          :on-failure [:follow-profile-fail]}})))
+
+;; --- favorite/unfavorite article
+
+(re-frame/reg-event-fx :favorite-article
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get}]
+                         (let [slug (get-in db [:current-article :slug])
+                               favorited? (get-in db [:current-article :favorited])]
+                           {:db (assoc db :loading true)
+                            :http-xhrio {:method (if favorited? :delete :post)
+                                         :uri (str base-url "/articles/" slug "/favorite")
+                                         :headers {"Authorization" (str "Token " (:token cookie))}
+                                         :response-format (ajax/json-response-format {:keywords? true})
+                                         :format (ajax/json-request-format)
+                                         :on-success [:get-article slug]
+                                         :on-failure [:favorite-article-fail]}})))
+
+(re-frame/reg-event-db :favorite-article-fail
+                       (fn [db [_ result]]
+                         (assoc db :loading false)))
