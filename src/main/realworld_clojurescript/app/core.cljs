@@ -21,7 +21,11 @@
              ["/profile/:username" {:view views/profile
                                     :name :profile}]
              ["/profile/:username/favorites" {:view views/profile
-                                              :name :profile-favorites}]])
+                                              :name :profile-favorites}]
+             ["/editor" {:view views/edit-article
+                         :name :create-article}]
+             ["/editor/:slug" {:view views/edit-article
+                               :name :edit-article}]])
 
 (def router
   (rf/router routes))

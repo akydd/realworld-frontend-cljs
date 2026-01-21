@@ -30,7 +30,12 @@
                                                                     :bio ""
                                                                     :email ""
                                                                     :password ""}
-                                                           :error nil}}}))
+                                                           :error nil}
+                                           :article-form {:fields {:title ""
+                                                                   :description ""
+                                                                   :body ""
+                                                                   :tags []}
+                                                          :error nil}}}))
 
 (def base-url "http://localhost:8090/api")
 
@@ -52,7 +57,11 @@
       (= route-name :profile-favorites) (let [username (get-in route [:path-params :username])]
                                           (list [:dispatch [:get-profile username]]
                                                 [:dispatch [:change-profile-page-tab :favorited-articles username]]))
-      (= route-name :settings) (list [:dispatch [:clear-settings-form]]))))
+      (= route-name :settings) (list [:dispatch [:clear-settings-form]])
+      (= route-name :create-article) (list [:dispatch [:clear-article-form]])
+      (= route-name :edit-article) (let [slug (get-in route [:path-param :slug])]
+                                     (list [:dispatch [:clear-article-form]]
+                                           [:dispatch [:populate-article-form slug]])))))
 
 ;; --- auth ---
 
@@ -448,3 +457,37 @@
 (re-frame/reg-event-db :favorite-article-fail
                        (fn [db [_ result]]
                          (assoc db :loading false)))
+
+;; --- create/edit article ---
+
+(re-frame/reg-event-db :clear-article-form
+                       (fn [db]
+                         (assoc-in db [:forms :article-form] {:fields {:title ""
+                                                                       :description ""
+                                                                       :body ""}
+                                                              :error nil})))
+
+(re-frame/reg-event-fx :populate-article-form
+                       (fn [db] nil))
+
+(re-frame/reg-event-fx :create-article
+                       [cookie-interceptor]
+                       (fn [{db :db cookie :cookie/get}]
+                         {:db (assoc db :loading true)
+                          :http-xhrio {:method :post
+                                       :uri (str base-url "/articles")
+                                       :params {:article (get-in db [:forms :article-form :fields])}
+                                       :headers {"Authorization" (str "Token " (:token cookie))}
+                                       :response-format (ajax/json-response-format {:keywords? true})
+                                       :format (ajax/json-request-format)
+                                       :on-success [:create-article-success]
+                                       :on-failure [:create-article-fail]}}))
+
+(re-frame/reg-event-fx :create-article-success
+                       (fn [db [_ result]]
+                         {:db (assoc db :loading false)
+                          :fx [[:dispatch [:push-state :home]]]}))
+
+(re-frame/reg-event-fx :create-article-fail
+                       (fn [db [_ result]]
+                         {:db (assoc db :loading false)}))

@@ -327,6 +327,42 @@
         (for [article articles]
           ^{:key (:slug article)} [article-preview article])]]]]))
 
+(defn edit-article []
+  (let [body @(re-frame/subscribe [:form :article-form :body])
+        form-complete? @(re-frame/subscribe [:article-form-complete?])
+        error @(re-frame/subscribe [:article-form-error])]
+    [:div.editor-page
+     [:div.container.page
+      [:div.row
+       [:div.col-md-10.offset-md-1.col-xs-12
+
+        (when error
+          [:ul.error-messages
+           [:li "That title is required"]])
+
+        [:form
+         [:fieldset
+          [form-input "Article Title" "text" :article-form :title]
+          [form-input "What's this article about?" "text" :article-form :description]
+          [:fieldset.form-group
+           [:textarea.form-control {:rows 8
+                                    :placeholder "Write your article (in markdown)"
+                                    :value body
+                                    :on-change #(re-frame/dispatch [:update-form :article-form :body (-> % .-target .-value)])}]]
+          [:fieldset.form-group
+           [:input.form-control {:type "text"
+                                 :placeholder "Enter tags"}]
+           [:div.tag-list
+            [:span.tag-default.tag-pill
+             [:i.ion-close-round] "tag"]]]
+          [:button.btn.btn-lg.pull-xs-right.btn-primary
+           {:disabled (not form-complete?)
+            :type "button"
+            :on-click (fn [e]
+                        (.preventDefault e)
+                        (re-frame/dispatch [:create-article]))}
+           "Publish Article"]]]]]]]))
+
 (defn app []
   [:div
    [header]
