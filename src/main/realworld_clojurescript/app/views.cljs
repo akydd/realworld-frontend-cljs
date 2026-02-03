@@ -248,12 +248,14 @@
 
      [:div.container.page
       [:div.row.article-content
-       [:div.col-md-12 (map h/as-hiccup (h/parse-fragment (:body article)))
+       [:div.col-md-12
+        (let [body (map h/as-hiccup (h/parse-fragment (:body article)))]
+          (into ^{:key "body"} [:<>] body))
 
         (when (seq (:tagList article))
-          [:ul.tag-list
-           (for [tag (:tagList article)]
-             ^{:key tag} [:li.tag-default.tag-pill.tag-outline tag])])]]
+          ^{:key "tags"} [:ul.tag-list
+                          (for [tag (:tagList article)]
+                            ^{:key tag} [:li.tag-default.tag-pill.tag-outline tag])])]]
 
       [:hr]
 
