@@ -1,6 +1,7 @@
 (ns realworld-clojurescript.app.views
   (:require
-   [re-frame.core :as re-frame]))
+   [re-frame.core :as re-frame]
+   [hickory.core :as h]))
 
 (defn nav-link
   [{:keys [link route label] :as opts} & children]
@@ -236,7 +237,7 @@
         [:i.ion-trash-a] "\u00A0Delete Article"])]))
 
 (defn article-page []
-  (let [article @(re-frame/subscribe [:current-article])
+  (let [article @(re-frame/subscribe [:current-article-formatted])
         comments @(re-frame/subscribe [:comments])
         current-user @(re-frame/subscribe [:current-user])]
     [:div.article-page
@@ -247,7 +248,7 @@
 
      [:div.container.page
       [:div.row.article-content
-       [:div.col-md-12 (:body article)
+       [:div.col-md-12 (map h/as-hiccup (h/parse-fragment (:body article)))
 
         (when (seq (:tagList article))
           [:ul.tag-list

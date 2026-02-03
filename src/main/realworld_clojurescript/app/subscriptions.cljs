@@ -1,6 +1,7 @@
 (ns realworld-clojurescript.app.subscriptions
   (:require
-   [re-frame.core :as re-frame]))
+   [re-frame.core :as re-frame]
+   [markdown.core :as md]))
 
 (re-frame/reg-sub :current-route
                   (fn [db _]
@@ -57,6 +58,10 @@
 (re-frame/reg-sub :current-article
                   (fn [db _]
                     (:current-article db)))
+
+(re-frame/reg-sub :current-article-formatted
+                  (fn [db _]
+                    (update-in (:current-article db) [:body] md/md->html)))
 
 (re-frame/reg-sub :articles
                   (fn [db _]
