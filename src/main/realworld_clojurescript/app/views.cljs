@@ -230,6 +230,9 @@
 
      (when (= (:username current-user) (:username author))
        [:button.btn.btn-sm.btn-outline-secondary
+        {:on-click (fn [e]
+                     (.preventDefault e)
+                     (re-frame/dispatch [:push-state :edit-article {:path-params {:slug (:slug article)}}]))}
         [:i.ion-edit] "\u00A0Edit Article"])
 
      (when (= (:username current-user) (:username author))

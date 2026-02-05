@@ -59,9 +59,9 @@
                                                 [:dispatch [:change-profile-page-tab :favorited-articles username]]))
       (= route-name :settings) (list [:dispatch [:clear-settings-form]])
       (= route-name :create-article) (list [:dispatch [:clear-article-form]])
-      (= route-name :edit-article) (let [slug (get-in route [:path-param :slug])]
+      (= route-name :edit-article) (let [slug (get-in route [:path-params :slug])]
                                      (list [:dispatch [:clear-article-form]]
-                                           [:dispatch [:populate-article-form slug]])))))
+                                           [:dispatch [:get-article-for-edit slug]])))))
 
 ;; --- auth ---
 
@@ -112,12 +112,12 @@
                                    :fx [[:dispatch [:route-changed]]]}))
 
 (re-frame/reg-fx :rfe-push-state
-                 (fn-traced [route]
-                            (rfe/push-state route)))
+                 (fn-traced [route & args]
+                            (rfe/navigate route args)))
 
 (re-frame/reg-event-fx :push-state
-                       (fn-traced [_ [_ route]]
-                                  {:rfe-push-state route}))
+                       (fn-traced [_ [_ route params]]
+                                  (rfe/navigate route params)))
 
 (re-frame/reg-event-fx :get-tags
                        (fn-traced [{:keys [db]}]
@@ -247,17 +247,22 @@
                              (assoc :loading false))))
 
 ;; --- articles page ---
+(defn- get-article-call
+  [cookie slug on-success on-failure]
+  (cond-> {:method :get
+           :uri (str base-url "/articles/" slug)
+           :response-format (ajax/json-response-format {:keywords? true})
+           :on-success [on-success]
+           :on-failure [on-failure]}
+    (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))})))
 
 (re-frame/reg-event-fx :get-article
                        [cookie-interceptor]
                        (fn [{db :db cookie :cookie/get} [_ slug]]
                          {:db (assoc db :loading true)
-                          :http-xhrio (cond-> {:method :get
-                                               :uri (str base-url "/articles/" slug)
-                                               :response-format (ajax/json-response-format {:keywords? true})
-                                               :on-success [:get-article-success]
-                                               :on-failure [:get-article-fail]}
-                                        (:token cookie) (assoc :headers {"Authorization" (str "Token " (:token cookie))}))}))
+                          :http-xhrio (get-article-call cookie slug
+                                                        :get-article-success
+                                                        :get-article-fail)}))
 
 (re-frame/reg-event-db :get-article-success
                        (fn [db [_ result]]
@@ -461,27 +466,39 @@
 ;; --- create/edit article ---
 
 (re-frame/reg-event-db :clear-article-form
-                       (fn [db]
-                         (assoc-in db [:forms :article-form] {:fields {:title ""
-                                                                       :description ""
-                                                                       :body ""}
-                                                              :error nil})))
+                       (fn-traced [db]
+                                  (assoc-in db [:forms :article-form] {:fields {:title ""
+                                                                                :description ""
+                                                                                :body ""}
+                                                                       :error nil})))
 
-(re-frame/reg-event-fx :populate-article-form
-                       (fn [db] nil))
+(re-frame/reg-event-db :populate-article-form
+                       (fn-traced [db]
+                                  (let [article (:current-article db)]
+                                    (-> db
+                                        (assoc-in [:forms :article-form :fields] {:title (:title article)
+                                                                                  :description (:description article)
+                                                                                  :body (:body article)})
+                                        (assoc :loading false)))))
+
+(re-frame/reg-event-fx :get-article-for-edit
+                       [cookie-interceptor]
+                       (fn-traced [{db :db cookie :cookie/get} [_ slug]]
+                                  {:db (assoc db :loading true)
+                                   :http-xhrio (get-article-call cookie slug :populate-article-form nil)}))
 
 (re-frame/reg-event-fx :create-article
                        [cookie-interceptor]
-                       (fn [{db :db cookie :cookie/get}]
-                         {:db (assoc db :loading true)
-                          :http-xhrio {:method :post
-                                       :uri (str base-url "/articles")
-                                       :params {:article (get-in db [:forms :article-form :fields])}
-                                       :headers {"Authorization" (str "Token " (:token cookie))}
-                                       :response-format (ajax/json-response-format {:keywords? true})
-                                       :format (ajax/json-request-format)
-                                       :on-success [:create-article-success]
-                                       :on-failure [:create-article-fail]}}))
+                       (fn-traced [{db :db cookie :cookie/get}]
+                                  {:db (assoc db :loading true)
+                                   :http-xhrio {:method :post
+                                                :uri (str base-url "/articles")
+                                                :params {:article (get-in db [:forms :article-form :fields])}
+                                                :headers {"Authorization" (str "Token " (:token cookie))}
+                                                :response-format (ajax/json-response-format {:keywords? true})
+                                                :format (ajax/json-request-format)
+                                                :on-success [:create-article-success]
+                                                :on-failure [:create-article-fail]}}))
 
 (re-frame/reg-event-fx :create-article-success
                        (fn [db [_ result]]
